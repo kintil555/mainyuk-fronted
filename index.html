@@ -82,8 +82,43 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .player-slot .status.ready { color: #00b894; }
 .player-slot.empty .name { color: var(--text-muted); font-style: italic; }
 .waiting-info { text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; }
+
+/* === SETTINGS PANEL === */
+.settings-panel {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 14px; margin-bottom: 14px;
+}
+.settings-title {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 2px;
+  color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+}
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 10px;
+}
+.setting-row:last-child { margin-bottom: 0; }
+.setting-label { font-size: 0.82rem; font-weight: 700; color: var(--text); flex: 1; }
+.setting-label span { display: block; font-size: 0.68rem; color: var(--text-muted); font-weight: 400; margin-top: 1px; }
+.setting-control { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.setting-val {
+  font-family: 'Fredoka One', cursive; font-size: 1.1rem;
+  color: var(--accent2); min-width: 36px; text-align: center;
+}
+.setting-btn {
+  width: 28px; height: 28px; border-radius: 8px; border: none;
+  background: rgba(255,255,255,0.1); color: var(--text);
+  font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; font-weight: 800; flex-shrink: 0;
+}
+.setting-btn:hover { background: rgba(255,255,255,0.2); }
+.setting-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.host-badge {
+  display: inline-block; background: var(--accent2); color: #1a1a2e;
+  font-size: 0.6rem; font-weight: 800; padding: 1px 6px; border-radius: 10px;
+  text-transform: uppercase; letter-spacing: 1px; margin-left: 4px; vertical-align: middle;
+}
 /* === GAME SCREEN === */
-#screen-game { flex-direction: column; height: 100dvh; max-height: 100dvh; overflow: hidden; }
+#screen-game { flex-direction: column; height: 100dvh; overflow: hidden; }
 .game-header { background: var(--surface); padding: 6px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; z-index: 100; }
 .timer-display { display: flex; flex-direction: column; align-items: center; }
 .timer-num { font-family: 'Fredoka One', cursive; font-size: 1.8rem; line-height: 1; transition: color 0.5s; }
@@ -95,9 +130,9 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .drawer-text span { color: var(--accent2); }
 .word-display { font-family: 'Fredoka One', cursive; font-size: clamp(0.85rem, 2.5vw, 1.4rem); letter-spacing: 6px; color: var(--accent3); text-align: center; padding: 4px; }
 /* game-body: canvas kiri + tools kanan */
-.game-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
-.canvas-area { flex: 1; display: flex; flex-direction: row; min-width: 0; min-height: 0; background: var(--bg); position: relative; overflow: hidden; }
-#game-canvas { display: block; background: white; cursor: crosshair; touch-action: none; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+.game-body { display: flex; flex: 1; overflow: hidden; }
+.canvas-area { flex: 1; display: flex; flex-direction: row; min-width: 0; background: var(--bg); position: relative; overflow: hidden; }
+#game-canvas { display: block; background: white; cursor: crosshair; touch-action: none; flex: 1; min-width: 0; }
 .canvas-overlay { position: absolute; inset: 0; background: transparent; z-index: 5; display: none; }
 /* Draw tools — kanan, vertikal */
 .draw-tools { background: var(--surface); padding: 8px 5px; display: none; flex-direction: column; align-items: center; gap: 7px; border-left: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; width: 50px; overflow-y: auto; overflow-x: hidden; }
@@ -418,9 +453,42 @@ input[type="text"]::placeholder { color: var(--text-muted); }
       <span class="code" id="room-code-display" onclick="copyCode()">------</span>
       <div class="copy-hint">Tap untuk copy</div>
     </div>
-    <p class="panel-title">Pemain (min 3, max 5)</p>
+    <p class="panel-title">Pemain (min 3, max <span id="max-players-label">5</span>)</p>
     <div class="player-grid" id="player-slots"></div>
     <p class="waiting-info" id="waiting-info">Menunggu pemain lain...</p>
+
+    <!-- SETTINGS PANEL -->
+    <div class="settings-panel" id="settings-panel">
+      <div class="settings-title">⚙️ Pengaturan Game <span id="host-only-note" style="margin-left:auto;font-size:0.68rem;color:var(--text-muted);display:none;">Hanya host yang bisa ubah</span></div>
+
+      <div class="setting-row">
+        <div class="setting-label">⏱ Waktu Gambar <span>Detik per ronde</span></div>
+        <div class="setting-control">
+          <button class="setting-btn" id="btn-drawtime-dec" onclick="adjustConfig('drawTime',-10)">−</button>
+          <div class="setting-val" id="val-drawtime">80</div>
+          <button class="setting-btn" id="btn-drawtime-inc" onclick="adjustConfig('drawTime',+10)">+</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">🔄 Jumlah Ronde <span>Per pemain</span></div>
+        <div class="setting-control">
+          <button class="setting-btn" id="btn-rounds-dec" onclick="adjustConfig('maxRounds',-1)">−</button>
+          <div class="setting-val" id="val-rounds">3</div>
+          <button class="setting-btn" id="btn-rounds-inc" onclick="adjustConfig('maxRounds',+1)">+</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">👥 Maks Pemain <span>Kapasitas room</span></div>
+        <div class="setting-control">
+          <button class="setting-btn" id="btn-maxpl-dec" onclick="adjustConfig('maxPlayers',-1)">−</button>
+          <div class="setting-val" id="val-maxplayers">5</div>
+          <button class="setting-btn" id="btn-maxpl-inc" onclick="adjustConfig('maxPlayers',+1)">+</button>
+        </div>
+      </div>
+    </div>
+
     <button class="btn btn-green" id="ready-btn" onclick="toggleReady()">✅ Siap!</button>
     <div style="margin-top: 8px;"></div>
     <button class="btn btn-danger" onclick="leaveRoom()">⬅ Keluar</button>
@@ -530,6 +598,15 @@ let players = [];
 let correctGuessers = new Set();
 let turnstileToken = null;
 let turnstileVerified = false;
+let hostId = null;
+let gameConfig = { drawTime: 80, maxRounds: 3, maxPlayers: 5 };
+
+// Config batas untuk UI
+const CONFIG_LIMITS = {
+  drawTime:   { min: 30, max: 180, step: 10 },
+  maxRounds:  { min: 1,  max: 10,  step: 1  },
+  maxPlayers: { min: 3,  max: 8,   step: 1  },
+};
 
 const COLORS = ['#000000','#ffffff','#ff4444','#ff8c00','#ffd700','#7ed321','#00b894','#00ccc0','#4a90d9','#9b59b6','#e91e63','#795548','#607d8b'];
 const SIZES = [3, 7, 14, 24];
@@ -611,12 +688,20 @@ function send(data) {
 function handleMessage(msg) {
   if (msg.type === 'welcome') {
     myClientId = msg.clientId;
+    hostId = msg.hostId;
     players = msg.players || [];
+    if (msg.config) { gameConfig = msg.config; renderConfig(); }
     renderWaitingPlayers();
   } else if (msg.type === 'player_joined' || msg.type === 'player_left' || msg.type === 'player_ready') {
     players = msg.players || [];
+    if (msg.hostId !== undefined) { hostId = msg.hostId; }
     renderWaitingPlayers();
     if (gamePhase === 'drawing') { renderScoreStrip(); }
+  } else if (msg.type === 'config_update') {
+    gameConfig = msg.config;
+    if (msg.hostId !== undefined) { hostId = msg.hostId; }
+    renderConfig();
+    renderWaitingPlayers(); // update max player label
   } else if (msg.type === 'game_starting') {
     gamePhase = 'starting';
     showOverlay('overlay-starting');
@@ -878,17 +963,68 @@ function toggleReady() {
   send({ type: 'set_ready', ready: isReady });
 }
 
+// === SETTINGS ===
+function isHost() { return myClientId && myClientId === hostId; }
+
+function renderConfig() {
+  document.getElementById('val-drawtime').textContent = gameConfig.drawTime + 's';
+  document.getElementById('val-rounds').textContent = gameConfig.maxRounds;
+  document.getElementById('val-maxplayers').textContent = gameConfig.maxPlayers;
+  document.getElementById('max-players-label').textContent = gameConfig.maxPlayers;
+
+  var amHost = isHost();
+  // Enable/disable tombol berdasarkan batas dan status host
+  var btns = document.querySelectorAll('.setting-btn');
+  btns.forEach(function(b) { b.disabled = !amHost; });
+
+  // Tombol − dan + per setting dengan validasi batas
+  setSettingBtnState('drawTime');
+  setSettingBtnState('maxRounds');
+  setSettingBtnState('maxPlayers');
+
+  // Tampilkan note "Hanya host yang bisa ubah" untuk non-host
+  document.getElementById('host-only-note').style.display = amHost ? 'none' : 'block';
+}
+
+function setSettingBtnState(key) {
+  var lim = CONFIG_LIMITS[key];
+  var val = gameConfig[key];
+  var keyLower = key.toLowerCase();
+  var decBtn = document.getElementById('btn-' + (keyLower === 'drawtime' ? 'drawtime' : keyLower === 'maxrounds' ? 'rounds' : 'maxpl') + '-dec');
+  var incBtn = document.getElementById('btn-' + (keyLower === 'drawtime' ? 'drawtime' : keyLower === 'maxrounds' ? 'rounds' : 'maxpl') + '-inc');
+  if (decBtn) decBtn.disabled = !isHost() || val <= lim.min;
+  if (incBtn) incBtn.disabled = !isHost() || val >= lim.max;
+}
+
+function adjustConfig(key, delta) {
+  if (!isHost()) return;
+  var lim = CONFIG_LIMITS[key];
+  var newVal = Math.max(lim.min, Math.min(lim.max, gameConfig[key] + delta));
+  if (newVal === gameConfig[key]) return;
+  gameConfig[key] = newVal;
+  renderConfig(); // update UI langsung (optimistic)
+  var payload = { type: 'set_config' };
+  payload[key] = newVal;
+  send(payload);
+}
+
 function renderWaitingPlayers() {
+  var maxPl = gameConfig.maxPlayers || 5;
+  document.getElementById('max-players-label').textContent = maxPl;
   var container = document.getElementById('player-slots');
   var html = '';
-  for (var i = 0; i < 5; i++) {
+  for (var i = 0; i < maxPl; i++) {
     var p = players[i];
     var avatar = AVATARS[i % AVATARS.length];
     if (p) {
       var isMe = p.clientId === myClientId;
+      var isHostPlayer = p.clientId === hostId;
       html += '<div class="player-slot filled ' + (p.isReady ? 'ready' : '') + '">' +
         '<div class="avatar" style="background:' + PLAYER_COLORS[i % PLAYER_COLORS.length] + '20">' + avatar + '</div>' +
-        '<div class="info"><div class="name">' + p.username + (isMe ? ' (kamu)' : '') + '</div>' +
+        '<div class="info"><div class="name">' + p.username +
+          (isMe ? ' (kamu)' : '') +
+          (isHostPlayer ? '<span class="host-badge">HOST</span>' : '') +
+        '</div>' +
         '<div class="status ' + (p.isReady ? 'ready' : '') + '">' + (p.isReady ? '✅ Siap' : '⏳ Menunggu') + '</div></div></div>';
     } else {
       html += '<div class="player-slot empty">' +
@@ -897,6 +1033,7 @@ function renderWaitingPlayers() {
     }
   }
   container.innerHTML = html;
+
   var readyCount = players.filter(function(p) { return p.isReady; }).length;
   var info = document.getElementById('waiting-info');
   if (players.length < 3) {
@@ -906,6 +1043,9 @@ function renderWaitingPlayers() {
   } else {
     info.textContent = 'Semua siap! Memulai...';
   }
+
+  // Update tampilan settings setiap kali player list berubah (host bisa berubah)
+  renderConfig();
 }
 
 // === GAME ROUND ===
@@ -976,67 +1116,20 @@ function updateTimer(t) {
 
 // === CANVAS ===
 var canvasInited = false;
-
-// Ukuran kanvas "virtual" yang konsisten — semua koordinat dinormalisasi ke ukuran ini
-// Ini memastikan gambar dari desktop tampil identik di mobile
-var CANVAS_VIRTUAL_W = 1200;
-var CANVAS_VIRTUAL_H = 675; // rasio 16:9
-
 function initCanvas() {
   var canvas = document.getElementById('game-canvas');
   var ctx = canvas.getContext('2d');
-
   function resize() {
-    // Simpan gambar sebelumnya sebagai image data agar tidak hilang saat resize
-    var oldW = canvas.width, oldH = canvas.height;
-    var snapshot = null;
-    if (oldW > 0 && oldH > 0) {
-      try { snapshot = ctx.getImageData(0, 0, oldW, oldH); } catch(e) {}
-    }
-
-    // Hitung ukuran canvas dari parent container yang sebenarnya (bukan window)
-    // Ini lebih akurat di mobile fullscreen
-    var canvasArea = canvas.parentElement;
-    var areaW = canvasArea.clientWidth;
-    var areaH = canvasArea.clientHeight;
-
-    // Kurangi lebar tools kalau sedang tampil
-    var toolsEl = document.getElementById('draw-tools');
-    var toolsW = toolsEl.classList.contains('visible') ? (toolsEl.offsetWidth || 0) : 0;
-
-    var newW = areaW - toolsW;
-    var newH = areaH;
-
-    // Paksa minimal agar tidak 0
-    if (newW < 10) newW = 10;
-    if (newH < 10) newH = 10;
-
-    canvas.width = newW;
-    canvas.height = newH;
-
-    // Isi background putih
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, newW, newH);
-
-    // Restore snapshot dengan scaling ke ukuran baru
-    if (snapshot && oldW > 0 && oldH > 0) {
-      // Buat offscreen canvas sementara untuk scaling
-      var tmp = document.createElement('canvas');
-      tmp.width = oldW; tmp.height = oldH;
-      tmp.getContext('2d').putImageData(snapshot, 0, 0);
-      ctx.drawImage(tmp, 0, 0, newW, newH);
-    }
+    var headerH = document.querySelector('.game-header').offsetHeight || 0;
+    var bannerH = document.getElementById('your-word-banner').offsetHeight || 0;
+    var bottomH = document.querySelector('.bottom-panel') ? document.querySelector('.bottom-panel').offsetHeight : 0;
+    var toolsW = document.getElementById('draw-tools').classList.contains('visible') ? document.getElementById('draw-tools').offsetWidth : 0;
+    canvas.width = (canvas.parentElement.clientWidth || window.innerWidth) - toolsW;
+    canvas.height = window.innerHeight - headerH - bannerH - bottomH;
+    resetCanvas();
   }
-
   if (!canvasInited) {
-    // Pakai ResizeObserver agar lebih akurat dari resize event biasa
-    if (window.ResizeObserver) {
-      var ro = new ResizeObserver(function() { resize(); });
-      ro.observe(canvas.parentElement);
-    } else {
-      window.addEventListener('resize', resize);
-    }
-
+    window.addEventListener('resize', resize);
     var cp = document.getElementById('color-picker');
     cp.innerHTML = '';
     COLORS.forEach(function(c) {
@@ -1065,104 +1158,21 @@ function initCanvas() {
       };
       sp.appendChild(btn);
     });
-
-    canvas.addEventListener('mousedown', function(e) {
-      if (!isDrawer) return;
-      drawState.isDrawing = true;
-      var pos = getPos(e, canvas);
-      drawState.lastX = pos.x; drawState.lastY = pos.y;
-    });
-    canvas.addEventListener('mousemove', function(e) {
-      if (!drawState.isDrawing || !isDrawer) return;
-      var pos = getPos(e, canvas);
-      drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y);
-      // Kirim koordinat sebagai nilai NORMAL (0–1) relatif terhadap ukuran canvas
-      send({ type: 'draw', data: {
-        x1: drawState.lastX / canvas.width,  y1: drawState.lastY / canvas.height,
-        x2: pos.x / canvas.width,            y2: pos.y / canvas.height,
-        color: drawState.color, size: drawState.size, eraser: drawState.isEraser
-      }});
-      drawState.lastX = pos.x; drawState.lastY = pos.y;
-    });
+    canvas.addEventListener('mousedown', function(e) { if (!isDrawer) return; drawState.isDrawing = true; var pos = getPos(e, canvas); drawState.lastX = pos.x; drawState.lastY = pos.y; });
+    canvas.addEventListener('mousemove', function(e) { if (!drawState.isDrawing || !isDrawer) return; var pos = getPos(e, canvas); drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y); send({ type: 'draw', data: { x1: drawState.lastX, y1: drawState.lastY, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, eraser: drawState.isEraser } }); drawState.lastX = pos.x; drawState.lastY = pos.y; });
     canvas.addEventListener('mouseup', function() { drawState.isDrawing = false; });
     canvas.addEventListener('mouseleave', function() { drawState.isDrawing = false; });
-
-    canvas.addEventListener('touchstart', function(e) {
-      if (!isDrawer) return;
-      e.preventDefault();
-      drawState.isDrawing = true;
-      var pos = getPos(e.touches[0], canvas);
-      drawState.lastX = pos.x; drawState.lastY = pos.y;
-    }, { passive: false });
-    canvas.addEventListener('touchmove', function(e) {
-      if (!drawState.isDrawing || !isDrawer) return;
-      e.preventDefault();
-      var pos = getPos(e.touches[0], canvas);
-      drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y);
-      // Kirim koordinat normal (0–1)
-      send({ type: 'draw', data: {
-        x1: drawState.lastX / canvas.width,  y1: drawState.lastY / canvas.height,
-        x2: pos.x / canvas.width,            y2: pos.y / canvas.height,
-        color: drawState.color, size: drawState.size, eraser: drawState.isEraser
-      }});
-      drawState.lastX = pos.x; drawState.lastY = pos.y;
-    }, { passive: false });
+    canvas.addEventListener('touchstart', function(e) { if (!isDrawer) return; e.preventDefault(); drawState.isDrawing = true; var pos = getPos(e.touches[0], canvas); drawState.lastX = pos.x; drawState.lastY = pos.y; }, { passive: false });
+    canvas.addEventListener('touchmove', function(e) { if (!drawState.isDrawing || !isDrawer) return; e.preventDefault(); var pos = getPos(e.touches[0], canvas); drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y); send({ type: 'draw', data: { x1: drawState.lastX, y1: drawState.lastY, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, eraser: drawState.isEraser } }); drawState.lastX = pos.x; drawState.lastY = pos.y; }, { passive: false });
     canvas.addEventListener('touchend', function() { drawState.isDrawing = false; });
-
     canvasInited = true;
   }
   resize();
 }
-
-// Konversi posisi event ke koordinat canvas (pixel aktual)
-function getPos(e, canvas) {
-  var rect = canvas.getBoundingClientRect();
-  return {
-    x: (e.clientX - rect.left) * (canvas.width / rect.width),
-    y: (e.clientY - rect.top) * (canvas.height / rect.height)
-  };
-}
-
-// Gambar garis di canvas lokal (pakai koordinat pixel aktual)
-function drawLine(ctx, x1, y1, x2, y2) {
-  ctx.globalCompositeOperation = drawState.isEraser ? 'destination-out' : 'source-over';
-  ctx.strokeStyle = drawState.isEraser ? 'rgba(0,0,0,1)' : drawState.color;
-  ctx.lineWidth = drawState.size;
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-  ctx.globalCompositeOperation = 'source-over';
-}
-
-// Gambar dari remote — koordinat datang dalam format normal (0–1), di-scale ke canvas lokal
-function drawRemote(data) {
-  var canvas = document.getElementById('game-canvas');
-  var ctx = canvas.getContext('2d');
-  // Kalau data lama (koordinat pixel absolut tanpa normalisasi), deteksi dari nilainya
-  // Koordinat normal selalu 0–1; kalau > 2 berarti masih format lama
-  var x1, y1, x2, y2;
-  if (data.x1 <= 1 && data.y1 <= 1 && data.x2 <= 1 && data.y2 <= 1) {
-    // Format baru: normalisasi → scale ke ukuran canvas lokal
-    x1 = data.x1 * canvas.width;  y1 = data.y1 * canvas.height;
-    x2 = data.x2 * canvas.width;  y2 = data.y2 * canvas.height;
-  } else {
-    // Format lama: koordinat absolut (fallback kompatibilitas)
-    x1 = data.x1; y1 = data.y1; x2 = data.x2; y2 = data.y2;
-  }
-  ctx.globalCompositeOperation = data.eraser ? 'destination-out' : 'source-over';
-  ctx.strokeStyle = data.eraser ? 'rgba(0,0,0,1)' : data.color;
-  ctx.lineWidth = data.size;
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-  ctx.globalCompositeOperation = 'source-over';
-}
-
-function resetCanvas() {
-  var canvas = document.getElementById('game-canvas');
-  var ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
+function getPos(e, canvas) { var rect = canvas.getBoundingClientRect(); return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) }; }
+function drawLine(ctx, x1, y1, x2, y2) { ctx.globalCompositeOperation = drawState.isEraser ? 'destination-out' : 'source-over'; ctx.strokeStyle = drawState.isEraser ? 'rgba(0,0,0,1)' : drawState.color; ctx.lineWidth = drawState.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.globalCompositeOperation = 'source-over'; }
+function drawRemote(data) { var canvas = document.getElementById('game-canvas'); var ctx = canvas.getContext('2d'); ctx.globalCompositeOperation = data.eraser ? 'destination-out' : 'source-over'; ctx.strokeStyle = data.eraser ? 'rgba(0,0,0,1)' : data.color; ctx.lineWidth = data.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(data.x1, data.y1); ctx.lineTo(data.x2, data.y2); ctx.stroke(); ctx.globalCompositeOperation = 'source-over'; }
+function resetCanvas() { var canvas = document.getElementById('game-canvas'); var ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
 function clearCanvas() { resetCanvas(); send({ type: 'clear_canvas' }); }
 function toggleEraser() { drawState.isEraser = !drawState.isEraser; document.getElementById('eraser-btn').classList.toggle('active', drawState.isEraser); }
 
