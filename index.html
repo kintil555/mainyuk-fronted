@@ -115,7 +115,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .tool-btn-v:hover { background: rgba(255,255,255,0.2); }
 .tool-btn-v.eraser.active { background: var(--accent2); }
 /* Bottom panel: skor strip + chat */
-.bottom-panel { background: var(--surface); border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; display: flex; flex-direction: column; height: 210px; transition: height 0.3s ease; }
+.bottom-panel { background: var(--surface); border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; display: flex; flex-direction: column; height: 210px; }
 .score-strip { display: flex; gap: 5px; padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.07); overflow-x: auto; flex-shrink: 0; }
 .score-strip::-webkit-scrollbar { height: 2px; }
 .score-chip { display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.06); border-radius: 20px; padding: 3px 9px; white-space: nowrap; font-size: 0.76rem; border: 1px solid transparent; flex-shrink: 0; }
@@ -290,35 +290,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 }
 @keyframes glowPulse { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.8);opacity:0.1} }
 
-/* === SIDEBAR TOGGLE === */
-.sidebar-toggle-btn {
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
-  z-index: 500;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: var(--accent);
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(233,69,96,0.5);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s, transform 0.15s;
-  flex-shrink: 0;
-}
-.sidebar-toggle-btn:active { transform: scale(0.93); }
-.sidebar-toggle-btn.chat-open { background: var(--accent3); }
-
-/* Bottom panel hidden state */
-.bottom-panel.hidden {
-  display: none;
-}
-
 /* Fullscreen landscape compact */
 @media (orientation: landscape) and (max-height: 500px) {
   .game-header { padding: 4px 10px; }
@@ -331,29 +302,66 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   .chat-msg { font-size: 0.72rem; }
 }
 
-/* === MOBILE: Compact scale & sidebar toggle === */
-@media (max-width: 768px) and (orientation: landscape) {
-  /* Kompak header di mobile landscape */
-  .game-header { padding: 3px 8px; gap: 6px; }
-  .timer-num { font-size: 1.4rem; }
-  .timer-display > div:last-child { display: none; } /* hide "detik" label */
-  .round-text { font-size: 0.68rem; }
-  .drawer-text { font-size: 0.78rem; }
-  .word-display { font-size: clamp(0.75rem, 2vw, 1rem); letter-spacing: 4px; }
+/* === MOBILE COMPACT SCALE === */
+/* Diterapkan via JS saat isMobile() + landscape */
+body.mobile-game {
+  font-size: 13px;
+}
+body.mobile-game .game-header {
+  padding: 3px 8px;
+  gap: 5px;
+}
+body.mobile-game .timer-num {
+  font-size: 1.3rem;
+}
+body.mobile-game .timer-display > div:last-child {
+  display: none;
+}
+body.mobile-game .round-text { font-size: 0.68rem; }
+body.mobile-game .drawer-text { font-size: 0.75rem; }
+body.mobile-game .word-display { font-size: 0.85rem; letter-spacing: 4px; }
+body.mobile-game .draw-tools { width: 40px; gap: 4px; padding: 5px 3px; }
+body.mobile-game .color-swatch { width: 20px; height: 20px; }
+body.mobile-game .tool-btn-v { width: 28px; height: 28px; font-size: 0.85rem; }
+body.mobile-game .bottom-panel { height: 170px; }
+body.mobile-game .score-chip { padding: 2px 6px; font-size: 0.68rem; }
+body.mobile-game .chat-msg { font-size: 0.7rem; }
+body.mobile-game .chat-input-area input { font-size: 0.78rem; padding: 5px 8px; }
+body.mobile-game .chat-input-area button { padding: 5px 10px; font-size: 0.78rem; }
+body.mobile-game .panel-title { font-size: 0.58rem; padding: 2px 6px 1px; }
+body.mobile-game .your-word-banner { font-size: 0.72rem; padding: 2px 10px; }
+body.mobile-game .score-strip { padding: 3px 6px; }
 
-  /* Draw tools lebih ramping */
-  .draw-tools { width: 42px; gap: 5px; padding: 6px 4px; }
-  .color-swatch { width: 20px; height: 20px; }
-  .tool-btn-v { width: 28px; height: 28px; font-size: 0.85rem; }
+/* === CHAT TOGGLE BUTTON === */
+.chat-toggle-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.75rem;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.chat-toggle-btn:active { transform: scale(0.95); }
+.chat-toggle-btn.chat-hidden {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+body.mobile-game .chat-toggle-btn {
+  display: flex;
+}
 
-  /* Bottom panel lebih kecil saat tampil */
-  .bottom-panel { height: 180px; }
-  .score-chip { padding: 2px 7px; font-size: 0.7rem; }
-  .chat-msg { font-size: 0.72rem; }
-  .panel-title { font-size: 0.6rem; padding: 2px 8px 1px; }
-
-  /* Tombol toggle muncul di mobile landscape */
-  .sidebar-toggle-btn { display: flex !important; }
+/* Bottom panel hidden */
+.bottom-panel.chat-hidden {
+  display: none !important;
 }
 </style>
 </head>
@@ -508,6 +516,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
       <div class="word-display" id="word-hint-display">_ _ _ _</div>
       <div id="word-length-info" style="font-size:0.65rem;color:var(--text-muted);"></div>
     </div>
+    <button class="chat-toggle-btn" id="chat-toggle-btn" onclick="toggleChatPanel()">💬 Chat</button>
   </div>
   <div class="your-word-banner" id="your-word-banner">
     Gambar: <strong id="your-word-text">...</strong> — jangan bocor! 🤫
@@ -539,8 +548,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
       </div>
     </div>
   </div>
-  <!-- Toggle chat sidebar (mobile only) -->
-  <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleChatPanel()" title="Sembunyikan/tampilkan chat">💬</button>
 </div>
 
 <!-- OVERLAYS -->
@@ -1197,31 +1204,34 @@ function showGameEnd(msg) {
 // === INIT ===
 document.getElementById('chat-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendGuess(); });
 
-// === CHAT PANEL TOGGLE (mobile) ===
-var chatPanelVisible = true;
+// === CHAT TOGGLE (mobile) ===
+var chatVisible = true;
 function toggleChatPanel() {
   var panel = document.getElementById('bottom-panel');
-  var btn = document.getElementById('sidebar-toggle-btn');
-  chatPanelVisible = !chatPanelVisible;
-  if (chatPanelVisible) {
-    panel.classList.remove('hidden');
-    btn.textContent = '💬';
-    btn.classList.add('chat-open');
-    btn.title = 'Sembunyikan chat';
+  var btn = document.getElementById('chat-toggle-btn');
+  chatVisible = !chatVisible;
+  if (chatVisible) {
+    panel.classList.remove('chat-hidden');
+    btn.classList.remove('chat-hidden');
+    btn.textContent = '💬 Chat';
   } else {
-    panel.classList.add('hidden');
-    btn.textContent = '💬';
-    btn.classList.remove('chat-open');
-    btn.title = 'Tampilkan chat';
-    // Re-init canvas to fill new space
-    setTimeout(function() {
-      if (typeof initCanvas === 'function') { canvasInited = false; initCanvas(); }
-    }, 50);
+    panel.classList.add('chat-hidden');
+    btn.classList.add('chat-hidden');
+    btn.textContent = '💬 Buka';
   }
-  // Re-init canvas after transition
+  // Re-init canvas supaya ukurannya menyesuaikan
   setTimeout(function() {
     if (typeof initCanvas === 'function') { canvasInited = false; initCanvas(); }
-  }, 320);
+  }, 50);
+}
+
+// Terapkan mobile compact class saat mobile + landscape
+function applyMobileClass() {
+  if (isMobile() && isLandscape()) {
+    document.body.classList.add('mobile-game');
+  } else {
+    document.body.classList.remove('mobile-game');
+  }
 }
 
 // === MOBILE ORIENTATION & FULLSCREEN ===
@@ -1265,6 +1275,8 @@ function checkOrientation() {
 
   var overlay = document.getElementById('rotate-overlay');
 
+  applyMobileClass();
+
   if (isLandscape()) {
     // Sembunyikan overlay, minta fullscreen
     overlay.classList.remove('show');
@@ -1300,6 +1312,7 @@ function checkOrientation() {
 
 // Deteksi awal saat halaman load
 if (isMobile()) {
+  applyMobileClass();
   // Kalau sudah landscape dari awal, langsung proceed
   if (isLandscape()) {
     hasEnteredLandscape = true;
