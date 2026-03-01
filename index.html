@@ -167,7 +167,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .canvas-overlay { position: absolute; background: transparent; z-index: 5; display: none; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 
 /* Draw tools — kanan canvas, vertikal */
-.draw-tools { background: var(--surface); padding: 8px 5px; display: none; flex-direction: column; align-items: center; gap: 7px; border-left: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; width: 50px; overflow-y: auto; overflow-x: hidden; }
+.draw-tools { background: var(--surface); padding: 8px 5px; display: none; flex-direction: column; align-items: center; gap: 7px; border-left: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; width: 50px; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; }
 .draw-tools.visible { display: flex; }
 .color-picker-wrap { display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .color-swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s; flex-shrink: 0; }
@@ -181,6 +181,9 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .tool-btn-v { background: rgba(255,255,255,0.1); border: none; border-radius: 8px; cursor: pointer; color: var(--text); font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: background 0.15s; width: 34px; height: 34px; flex-shrink: 0; }
 .tool-btn-v:hover { background: rgba(255,255,255,0.2); }
 .tool-btn-v.eraser.active { background: var(--accent2); }
+.tool-btn-v.active { background: var(--accent3); color: #1a1a2e; }
+.tool-btn-v.fill-btn.active { background: var(--accent2); color: #1a1a2e; }
+.shape-preview { position: fixed; pointer-events: none; z-index: 9000; border: 2px dashed rgba(0,0,0,0.4); }
 
 /* =========================================================
    SIDEBAR CHAT — Desktop: selalu tampil di kanan
@@ -375,12 +378,104 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   .ping-bar:nth-child(4) { height: 14px; }
   .ping-ms { font-size: 0.55rem; }
 }
+
+/* === ROOM LIST OVERLAY === */
+#room-list-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9997;
+  background: rgba(10,10,20,0.97); backdrop-filter: blur(10px);
+  flex-direction: column; align-items: center; padding: 20px;
+  overflow-y: auto; gap: 16px;
+}
+#room-list-overlay.show { display: flex; }
+.rl-header { width: 100%; max-width: 600px; display: flex; align-items: center; justify-content: space-between; }
+.rl-title { font-family: 'Fredoka One', cursive; font-size: 1.6rem; background: linear-gradient(135deg, var(--accent2), var(--accent3)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.rl-close { background: rgba(255,255,255,0.1); border: none; border-radius: 10px; padding: 8px 14px; color: var(--text); cursor: pointer; font-weight: 800; font-family: 'Nunito',sans-serif; font-size: 0.9rem; transition: background 0.2s; }
+.rl-close:hover { background: rgba(255,255,255,0.2); }
+.rl-rooms { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 10px; }
+.room-card {
+  background: var(--card); border-radius: 14px; padding: 14px 18px;
+  border: 1px solid rgba(255,255,255,0.07);
+  display: flex; align-items: center; gap: 12px;
+  transition: border-color 0.2s, background 0.2s; cursor: pointer;
+}
+.room-card:hover { border-color: rgba(0,210,211,0.4); background: rgba(15,52,96,0.9); }
+.room-card.full { opacity: 0.5; cursor: not-allowed; }
+.room-card.playing { border-color: rgba(233,69,96,0.3); }
+.rc-info { flex: 1; min-width: 0; }
+.rc-name { font-weight: 800; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 8px; }
+.rc-badge { display: inline-flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.07); border-radius: 6px; padding: 2px 7px; font-size: 0.68rem; font-weight: 700; }
+.rc-badge.playing { background: rgba(233,69,96,0.2); color: var(--accent); }
+.rc-badge.waiting { background: rgba(0,210,211,0.15); color: var(--accent3); }
+.rc-badge.locked { background: rgba(245,166,35,0.2); color: var(--accent2); }
+.rc-join-btn { background: linear-gradient(135deg, var(--accent3), #0097a7); border: none; border-radius: 10px; padding: 8px 16px; color: white; font-weight: 800; font-family: 'Nunito',sans-serif; font-size: 0.85rem; cursor: pointer; transition: opacity 0.2s; flex-shrink: 0; }
+.rc-join-btn:hover { opacity: 0.85; }
+.rl-empty { color: var(--text-muted); text-align: center; padding: 40px 20px; font-size: 0.9rem; }
+.rl-refresh { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 9px 18px; color: var(--text); cursor: pointer; font-weight: 700; font-family: 'Nunito',sans-serif; font-size: 0.85rem; transition: background 0.2s; }
+.rl-refresh:hover { background: rgba(255,255,255,0.14); }
+
+/* === PASSWORD OVERLAY === */
+#password-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.88); backdrop-filter: blur(8px);
+  flex-direction: column; align-items: center; justify-content: center; padding: 20px;
+}
+#password-overlay.show { display: flex; }
+.pw-card { background: var(--card); border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 360px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: popIn 0.3s ease; text-align: center; }
+.pw-card h2 { font-family: 'Fredoka One', cursive; font-size: 1.4rem; color: var(--accent2); margin-bottom: 6px; }
+.pw-card p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px; }
+.pw-error { color: var(--accent); font-size: 0.8rem; min-height: 1.2em; margin-bottom: 8px; }
+.pw-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+/* === KICK BUTTON in waiting room === */
+.kick-btn { background: rgba(233,69,96,0.2); border: 1px solid rgba(233,69,96,0.4); border-radius: 6px; padding: 2px 8px; color: var(--accent); font-size: 0.7rem; font-weight: 800; cursor: pointer; transition: background 0.15s; font-family: 'Nunito',sans-serif; margin-left: 4px; }
+.kick-btn:hover { background: rgba(233,69,96,0.4); }
+
+/* === PASSWORD TOGGLE in lobby === */
+.password-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.password-row label { font-size: 0.82rem; color: var(--text-muted); font-weight: 700; flex: 1; }
+.toggle-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle-switch input { display: none; }
+.toggle-slider { position: absolute; inset: 0; background: rgba(255,255,255,0.12); border-radius: 22px; cursor: pointer; transition: background 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: white; top: 3px; left: 3px; transition: transform 0.2s; }
+.toggle-switch input:checked + .toggle-slider { background: var(--accent3); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
 </style>
 </head>
 <body>
 
 <div id="conn-status"></div>
 <div class="toast" id="toast"></div>
+
+
+<!-- ROOM LIST OVERLAY -->
+<div id="room-list-overlay">
+  <div class="rl-header">
+    <div class="rl-title">🏠 Room Tersedia</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="rl-refresh" onclick="loadRoomList()">🔄 Refresh</button>
+      <button class="rl-close" onclick="closeRoomList()">✕ Tutup</button>
+    </div>
+  </div>
+  <div class="rl-rooms" id="rl-rooms">
+    <div class="rl-empty">Memuat daftar room...</div>
+  </div>
+</div>
+
+<!-- PASSWORD OVERLAY -->
+<div id="password-overlay">
+  <div class="pw-card">
+    <div style="font-size:2rem;margin-bottom:8px;">🔒</div>
+    <h2>Room Private</h2>
+    <p id="pw-room-name">Masukkan password untuk bergabung</p>
+    <input type="text" id="pw-input" placeholder="Password..." maxlength="20" autocomplete="off" style="text-align:center;letter-spacing:3px;margin-bottom:8px;">
+    <div class="pw-error" id="pw-error"></div>
+    <div class="pw-actions">
+      <button class="btn btn-danger" style="flex:1;" onclick="closePasswordOverlay()">Batal</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="submitPassword()">Masuk 🎮</button>
+    </div>
+  </div>
+</div>
 
 <!-- ROTATE OVERLAY (mobile portrait) -->
 <div id="rotate-overlay">
@@ -430,14 +525,26 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 
 <!-- LOBBY -->
 <div id="screen-lobby" class="screen active">
-  <div style="padding: 30px 20px 0; text-align: center;">
+<canvas id="chess-bg" style="position:fixed;inset:0;z-index:0;pointer-events:none;"></canvas>
+  <div style="padding: 30px 20px 0; text-align: center; position:relative; z-index:1;">
     <h1 class="logo">🎨 GambarYuk!</h1>
     <p style="color: var(--text-muted); margin-top: 8px; font-size: 0.9rem;">Tebak gambar bareng teman!</p>
   </div>
-  <div class="lobby-card" style="margin: 0 auto;">
+  <div class="lobby-card" style="margin: 0 auto; position:relative; z-index:1;">
     <h2>✏️ Buat Room Baru</h2>
     <div class="input-group">
       <input type="text" id="username-input" placeholder="Nama kamu..." maxlength="20" autocomplete="off">
+      <input type="text" id="room-name-input" placeholder="Nama room (opsional)..." maxlength="30" autocomplete="off">
+    </div>
+    <div class="password-row">
+      <label>🔒 Room Private (pakai password)</label>
+      <label class="toggle-switch">
+        <input type="checkbox" id="private-toggle" onchange="togglePasswordField()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div id="password-field-wrap" style="display:none;margin-bottom:12px;">
+      <input type="text" id="room-password-input" placeholder="Password room..." maxlength="20" autocomplete="off">
     </div>
     <div class="captcha-section">
       <span class="captcha-label">🛡️ Verifikasi Manusia</span>
@@ -452,9 +559,12 @@ input[type="text"]::placeholder { color: var(--text-muted); }
     <div class="input-group">
       <input type="text" id="join-code-input" placeholder="Kode Room (6 huruf)" maxlength="6" style="text-transform: uppercase; letter-spacing: 4px; text-align: center;" autocomplete="off">
     </div>
-    <button class="btn btn-secondary" onclick="joinRoom()">🎮 Join Room</button>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary" onclick="joinRoom()" style="flex:1;">🎮 Join dengan Kode</button>
+      <button class="btn btn-danger" onclick="openRoomList()" style="flex:1;background:linear-gradient(135deg,var(--accent3),#0097a7);">🏠 Lihat Room</button>
+    </div>
   </div>
-  <p style="text-align: center; font-size: 0.75rem; color: var(--text-muted); padding-bottom: 20px;">
+  <p style="text-align: center; font-size: 0.75rem; color: var(--text-muted); padding-bottom: 20px; position:relative; z-index:1;">
     Minimal 3 pemain · Maksimal 5 pemain
   </p>
 </div>
@@ -557,6 +667,17 @@ input[type="text"]::placeholder { color: var(--text-muted); }
         <div class="draw-divider"></div>
         <div class="size-picker" id="size-picker"></div>
         <div class="draw-divider"></div>
+        <!-- Mode tools -->
+        <button class="tool-btn-v" id="tool-pen" onclick="setShapeTool('pen')" title="Pena (bebas)">✏️</button>
+        <button class="tool-btn-v" id="tool-line" onclick="setShapeTool('line')" title="Garis">╱</button>
+        <button class="tool-btn-v" id="tool-rect" onclick="setShapeTool('rect')" title="Kotak">▭</button>
+        <button class="tool-btn-v" id="tool-square" onclick="setShapeTool('square')" title="Persegi">□</button>
+        <button class="tool-btn-v" id="tool-ellipse" onclick="setShapeTool('ellipse')" title="Oval">⬭</button>
+        <button class="tool-btn-v" id="tool-circle" onclick="setShapeTool('circle')" title="Lingkaran">○</button>
+        <div class="draw-divider"></div>
+        <!-- Fill toggle -->
+        <button class="tool-btn-v fill-btn" id="fill-btn" onclick="toggleFill()" title="Fill (isi)">🪣</button>
+        <div class="draw-divider"></div>
         <button class="tool-btn-v eraser" id="eraser-btn" onclick="toggleEraser()" title="Hapus">🧹</button>
         <button class="tool-btn-v" onclick="clearCanvas()" title="Bersihkan">🗑️</button>
       </div>
@@ -625,7 +746,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 
 <script>
 // === HARDCODED CONFIG ===
-const SERVER_URL = 'https://mainyuk.secret5.workers.dev/';
+const SERVER_URL = 'https://mainyuk.dzikriganteng52637.workers.dev';
 
 // === STATE ===
 let ws = null;
@@ -653,7 +774,7 @@ const SIZES = [3, 7, 14, 24];
 const AVATARS = ['🐱','🐶','🦊','🐼','🐨','🐸','🦁','🐯','🐺','🦄','🐙','🦋'];
 const PLAYER_COLORS = ['#e94560','#f5a623','#00d2d3','#00b894','#a29bfe','#fd79a8'];
 
-let drawState = { isDrawing: false, color: '#000000', size: 7, isEraser: false, lastX: 0, lastY: 0 };
+let drawState = { isDrawing: false, color: '#000000', size: 7, isEraser: false, lastX: 0, lastY: 0, shapeTool: 'pen', isFill: false, shapeStartX: 0, shapeStartY: 0 };
 
 // =============================================
 // PING SYSTEM
@@ -714,6 +835,113 @@ setInterval(function() {
   }
 }, 2000);
 
+// === PASSWORD FIELD TOGGLE ===
+function togglePasswordField() {
+  var checked = document.getElementById('private-toggle').checked;
+  document.getElementById('password-field-wrap').style.display = checked ? 'block' : 'none';
+  if (!checked) document.getElementById('room-password-input').value = '';
+}
+
+// === ROOM LIST ===
+var _pendingJoinRoom = null;
+
+async function openRoomList() {
+  var username = document.getElementById('username-input').value.trim();
+  if (!username) { showToast('Masukkan nama kamu dulu!'); return; }
+  document.getElementById('room-list-overlay').classList.add('show');
+  await loadRoomList();
+}
+function closeRoomList() { document.getElementById('room-list-overlay').classList.remove('show'); }
+
+async function loadRoomList() {
+  var container = document.getElementById('rl-rooms');
+  container.innerHTML = '<div class="rl-empty">🔄 Memuat...</div>';
+  try {
+    var res = await fetch(SERVER_URL + '/rooms');
+    var rooms = await res.json();
+    if (!Array.isArray(rooms) || rooms.length === 0) {
+      container.innerHTML = '<div class="rl-empty">😢 Belum ada room aktif.<br>Buat room baru dulu!</div>';
+      return;
+    }
+    container.innerHTML = rooms.map(function(r) {
+      var isFull = r.playerCount >= r.maxPlayers;
+      var isPlaying = r.phase === 'playing';
+      var phaseLabel = isPlaying
+        ? '<span class="rc-badge playing">🎮 Sedang main</span>'
+        : '<span class="rc-badge waiting">⏳ Menunggu</span>';
+      var lockBadge = r.hasPassword ? '<span class="rc-badge locked">🔒 Private</span>' : '';
+      var countText = r.playerCount + '/' + r.maxPlayers + ' pemain';
+      var canJoin = !isFull;
+      return '<div class="room-card' + (isFull ? ' full' : '') + (isPlaying ? ' playing' : '') + '" onclick="' + (canJoin ? 'tryJoinRoom(' + JSON.stringify(r.roomId) + ',' + JSON.stringify(r.roomName) + ',' + (r.hasPassword ? 'true' : 'false') + ')' : '') + '">'
+        + '<div class="rc-info">'
+        + '<div class="rc-name">' + escHtml(r.roomName) + '</div>'
+        + '<div class="rc-meta">' + countText + ' ' + phaseLabel + ' ' + lockBadge + '</div>'
+        + '</div>'
+        + (canJoin ? '<button class="rc-join-btn" onclick="event.stopPropagation();tryJoinRoom(' + JSON.stringify(r.roomId) + ',' + JSON.stringify(r.roomName) + ',' + (r.hasPassword ? 'true' : 'false') + ')">Join →</button>' : '<span style="color:var(--text-muted);font-size:0.8rem;flex-shrink:0;">Penuh</span>')
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<div class="rl-empty">❌ Gagal memuat room list.</div>';
+  }
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function tryJoinRoom(roomId, roomName, hasPassword) {
+  var username = document.getElementById('username-input').value.trim();
+  if (!username) { showToast('Masukkan nama kamu dulu!'); return; }
+  _pendingJoinRoom = { roomId: roomId, username: username };
+  if (hasPassword) {
+    // Tampilkan password overlay
+    document.getElementById('pw-room-name').textContent = '🏠 ' + roomName;
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-error').textContent = '';
+    document.getElementById('password-overlay').classList.add('show');
+    setTimeout(function() { document.getElementById('pw-input').focus(); }, 200);
+  } else {
+    closeRoomList();
+    doJoinRoom(roomId, username, null);
+  }
+}
+
+function closePasswordOverlay() {
+  document.getElementById('password-overlay').classList.remove('show');
+  _pendingJoinRoom = null;
+}
+
+async function submitPassword() {
+  var pw = document.getElementById('pw-input').value.trim();
+  if (!pw) { document.getElementById('pw-error').textContent = 'Masukkan password!'; return; }
+  if (!_pendingJoinRoom) return;
+  // Verifikasi password ke server
+  try {
+    var res = await fetch(SERVER_URL.replace(/\/$/, '') + '/rooms');
+    // Kita tidak punya endpoint verify langsung dari registry, verifikasi akan dilakukan saat connect WS
+    // Untuk UX, langsung coba join dan server akan reject jika salah
+    // Simpan password untuk dikirim saat WS connect
+    _pendingJoinRoom.password = pw;
+    document.getElementById('password-overlay').classList.remove('show');
+    closeRoomList();
+    doJoinRoom(_pendingJoinRoom.roomId, _pendingJoinRoom.username, pw);
+  } catch(e) {
+    document.getElementById('pw-error').textContent = 'Gagal terhubung.';
+  }
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('password-overlay').classList.contains('show')) {
+    submitPassword();
+  }
+});
+
+function doJoinRoom(roomId, username, password) {
+  myUsername = username; currentRoomId = roomId;
+  document.getElementById('room-code-display').textContent = currentRoomId;
+  if (connectWS(currentRoomId, username, password)) { showScreen('screen-waiting'); }
+}
+
 // === TURNSTILE ===
 function onTurnstileSuccess(token) {
   turnstileToken = token; turnstileVerified = true;
@@ -749,18 +977,21 @@ function showScreen(id) {
   var el = document.getElementById(id);
   if (el) { el.classList.add('active'); }
   if (id === 'screen-game') { setTimeout(initCanvas, 100); }
+  // Chess background: start hanya di lobby
+  if (id === 'screen-lobby' && window.startChessBg) { setTimeout(window.startChessBg, 50); }
+  else if (window.stopChessBg) { window.stopChessBg(); }
 }
 function showOverlay(id) { var el = document.getElementById(id); if (el) el.classList.add('active'); }
 function hideOverlay(id) { var el = document.getElementById(id); if (el) el.classList.remove('active'); }
 
 // === WEBSOCKET ===
-function connectWS(roomId, username) {
+function connectWS(roomId, username, password) {
   var wsUrl = SERVER_URL.replace(/^http/, 'ws') + '/room/' + roomId;
   showConnStatus('Connecting...', 'connecting');
   ws = new WebSocket(wsUrl);
   ws.onopen = function() {
     showConnStatus('Connected!', 'ok');
-    ws.send(JSON.stringify({ type: 'set_username', username: username }));
+    ws.send(JSON.stringify({ type: 'set_username', username: username, password: password || null }));
     startPing();
   };
   ws.onmessage = function(e) {
@@ -860,6 +1091,10 @@ function handleMessage(msg) {
   } else if (msg.type === 'game_cancelled') {
     addChatMsg('⚠️ ' + msg.reason, 'system', '', null);
     gamePhase = 'lobby'; showScreen('screen-waiting');
+  } else if (msg.type === 'kicked') {
+    if (ws) { try { ws.close(); } catch(_) {} ws = null; }
+    showScreen('screen-lobby');
+    setTimeout(function() { showToast('🚫 ' + (msg.reason || 'Kamu di-kick dari room.')); }, 300);
   } else if (msg.type === 'error') {
     showToast('⚠️ ' + msg.message);
   }
@@ -882,7 +1117,9 @@ async function createAndJoinRoom() {
 }
 async function attemptCreateRoom(username, captchaToken, existingQueueId) {
   try {
-    var res = await fetch(SERVER_URL + '/create-room', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ captcha: captchaToken, queueId: existingQueueId }) });
+    var roomName = document.getElementById('room-name-input') ? (document.getElementById('room-name-input').value.trim() || (username + "'s Room")) : username + "'s Room";
+    var roomPassword = (document.getElementById('private-toggle') && document.getElementById('private-toggle').checked) ? (document.getElementById('room-password-input').value.trim() || null) : null;
+    var res = await fetch(SERVER_URL + '/create-room', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ captcha: captchaToken, queueId: existingQueueId, roomName: roomName, password: roomPassword }) });
     var data = await res.json();
     if (res.status === 202 && data.queued) {
       queueId = data.queueId; queueInitialWait = data.estimatedWait; queueStartWait = Date.now();
@@ -897,13 +1134,13 @@ async function attemptCreateRoom(username, captchaToken, existingQueueId) {
     currentRoomId = data.roomId; myUsername = username;
     document.getElementById('room-code-display').textContent = currentRoomId;
     resetCreateBtn();
-    if (connectWS(currentRoomId, username)) { showScreen('screen-waiting'); }
+    if (connectWS(currentRoomId, username, null)) { showScreen('screen-waiting'); }
   } catch(e) {
     hideQueueOverlay(); stopQueuePolling();
     currentRoomId = generateRoomId(); myUsername = username;
     document.getElementById('room-code-display').textContent = currentRoomId;
     resetCreateBtn();
-    if (connectWS(currentRoomId, username)) { showScreen('screen-waiting'); }
+    if (connectWS(currentRoomId, username, null)) { showScreen('screen-waiting'); }
   }
 }
 function resetCreateBtn() {
@@ -949,11 +1186,14 @@ function joinRoom() {
   var code = document.getElementById('join-code-input').value.trim().toUpperCase();
   if (!username) { showToast('Masukkan nama dulu!'); return; }
   if (code.length < 4) { showToast('Masukkan kode room!'); return; }
-  myUsername = username; currentRoomId = code;
-  document.getElementById('room-code-display').textContent = currentRoomId;
-  if (connectWS(currentRoomId, username)) { showScreen('screen-waiting'); }
+  doJoinRoom(code, username, null);
 }
 function leaveRoom() { if (ws) { ws.close(); } showScreen('screen-lobby'); }
+function kickPlayer(targetId) {
+  if (!isHost()) return;
+  if (!confirm('Kick pemain ini?')) return;
+  send({ type: 'kick_player', targetId: targetId });
+}
 function copyCode() { if (navigator.clipboard) { navigator.clipboard.writeText(currentRoomId); } showToast('✅ Kode disalin!'); }
 function generateRoomId() { var c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', id = ''; for (var i = 0; i < 6; i++) { id += c[Math.floor(Math.random() * c.length)]; } return id; }
 function toggleReady() {
@@ -1000,7 +1240,8 @@ function renderWaitingPlayers() {
     var p = players[i], avatar = AVATARS[i % AVATARS.length];
     if (p) {
       var isMe = p.clientId === myClientId, isHostPlayer = p.clientId === hostId;
-      html += '<div class="player-slot filled ' + (p.isReady ? 'ready' : '') + '"><div class="avatar" style="background:' + PLAYER_COLORS[i % PLAYER_COLORS.length] + '20">' + avatar + '</div><div class="info"><div class="name">' + p.username + (isMe ? ' (kamu)' : '') + (isHostPlayer ? '<span class="host-badge">HOST</span>' : '') + '</div><div class="status ' + (p.isReady ? 'ready' : '') + '">' + (p.isReady ? '✅ Siap' : '⏳ Menunggu') + '</div></div></div>';
+      var kickBtn = (isHost() && !isMe && gamePhase === 'lobby') ? '<button class="kick-btn" onclick="kickPlayer(' + JSON.stringify(p.clientId) + ')">✕ Kick</button>' : '';
+      html += '<div class="player-slot filled ' + (p.isReady ? 'ready' : '') + '"><div class="avatar" style="background:' + PLAYER_COLORS[i % PLAYER_COLORS.length] + '20">' + avatar + '</div><div class="info"><div class="name">' + p.username + (isMe ? ' (kamu)' : '') + (isHostPlayer ? '<span class="host-badge">HOST</span>' : '') + kickBtn + '</div><div class="status ' + (p.isReady ? 'ready' : '') + '">' + (p.isReady ? '✅ Siap' : '⏳ Menunggu') + '</div></div></div>';
     } else {
       html += '<div class="player-slot empty"><div class="avatar" style="background:rgba(255,255,255,0.05)">👤</div><div class="info"><div class="name">' + (i < 3 ? 'Slot wajib...' : 'Opsional') + '</div></div></div>';
     }
@@ -1173,20 +1414,192 @@ function initCanvas() {
       btn.onclick = function() { drawState.size = sz; document.querySelectorAll('.size-btn').forEach(function(b) { b.classList.remove('active'); }); btn.classList.add('active'); };
       sp.appendChild(btn);
     });
-    canvas.addEventListener('mousedown', function(e) { if (!isDrawer) return; drawState.isDrawing = true; var pos = getPos(e, canvas); drawState.lastX = pos.x; drawState.lastY = pos.y; });
-    canvas.addEventListener('mousemove', function(e) { if (!drawState.isDrawing || !isDrawer) return; var pos = getPos(e, canvas); drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y); send({ type: 'draw', data: { x1: drawState.lastX, y1: drawState.lastY, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, eraser: drawState.isEraser } }); drawState.lastX = pos.x; drawState.lastY = pos.y; });
-    canvas.addEventListener('mouseup', function() { drawState.isDrawing = false; });
-    canvas.addEventListener('mouseleave', function() { drawState.isDrawing = false; });
-    canvas.addEventListener('touchstart', function(e) { if (!isDrawer) return; e.preventDefault(); drawState.isDrawing = true; var pos = getPos(e.touches[0], canvas); drawState.lastX = pos.x; drawState.lastY = pos.y; }, { passive: false });
-    canvas.addEventListener('touchmove', function(e) { if (!drawState.isDrawing || !isDrawer) return; e.preventDefault(); var pos = getPos(e.touches[0], canvas); drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y); send({ type: 'draw', data: { x1: drawState.lastX, y1: drawState.lastY, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, eraser: drawState.isEraser } }); drawState.lastX = pos.x; drawState.lastY = pos.y; }, { passive: false });
-    canvas.addEventListener('touchend', function() { drawState.isDrawing = false; });
+    // ---- MOUSE EVENTS (shapes + pen) ----
+    canvas.addEventListener('mousedown', function(e) {
+      if (!isDrawer) return;
+      var pos = getPos(e, canvas);
+      drawState.isDrawing = true;
+      drawState.shapeStartX = pos.x; drawState.shapeStartY = pos.y;
+      drawState.lastX = pos.x; drawState.lastY = pos.y;
+      if (drawState.shapeTool === 'pen' || drawState.isEraser) {
+        // pen: mulai path baru
+      }
+    });
+    canvas.addEventListener('mousemove', function(e) {
+      if (!drawState.isDrawing || !isDrawer) return;
+      var pos = getPos(e, canvas);
+      if (drawState.shapeTool === 'pen' || drawState.isEraser) {
+        drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y);
+        send({ type: 'draw', data: { tool: 'pen', x1: drawState.lastX, y1: drawState.lastY, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, eraser: drawState.isEraser } });
+        drawState.lastX = pos.x; drawState.lastY = pos.y;
+      }
+      // shape preview via CSS overlay — dibuat di drawShapePreview
+      if (drawState.shapeTool !== 'pen' && !drawState.isEraser) {
+        drawShapePreview(canvas, drawState.shapeStartX, drawState.shapeStartY, pos.x, pos.y);
+      }
+    });
+    canvas.addEventListener('mouseup', function(e) {
+      if (!drawState.isDrawing || !isDrawer) return;
+      var pos = getPos(e, canvas);
+      drawState.isDrawing = false;
+      clearShapePreview();
+      if (drawState.shapeTool !== 'pen' && !drawState.isEraser) {
+        var sx = drawState.shapeStartX, sy = drawState.shapeStartY;
+        var shapeData = { tool: drawState.shapeTool, x1: sx, y1: sy, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, fill: drawState.isFill };
+        drawShape(ctx, shapeData);
+        send({ type: 'draw', data: shapeData });
+      }
+    });
+    canvas.addEventListener('mouseleave', function() {
+      if (drawState.isDrawing && drawState.shapeTool !== 'pen' && !drawState.isEraser) {
+        clearShapePreview();
+      }
+      if (drawState.shapeTool === 'pen' || drawState.isEraser) drawState.isDrawing = false;
+    });
+    // ---- TOUCH EVENTS ----
+    canvas.addEventListener('touchstart', function(e) {
+      if (!isDrawer) return; e.preventDefault();
+      var pos = getPos(e.touches[0], canvas);
+      drawState.isDrawing = true;
+      drawState.shapeStartX = pos.x; drawState.shapeStartY = pos.y;
+      drawState.lastX = pos.x; drawState.lastY = pos.y;
+    }, { passive: false });
+    canvas.addEventListener('touchmove', function(e) {
+      if (!drawState.isDrawing || !isDrawer) return; e.preventDefault();
+      var pos = getPos(e.touches[0], canvas);
+      if (drawState.shapeTool === 'pen' || drawState.isEraser) {
+        drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y);
+        send({ type: 'draw', data: { tool: 'pen', x1: drawState.lastX, y1: drawState.lastY, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, eraser: drawState.isEraser } });
+        drawState.lastX = pos.x; drawState.lastY = pos.y;
+      }
+    }, { passive: false });
+    canvas.addEventListener('touchend', function(e) {
+      if (!drawState.isDrawing || !isDrawer) return;
+      var touch = e.changedTouches[0];
+      var pos = getPos(touch, canvas);
+      drawState.isDrawing = false;
+      clearShapePreview();
+      if (drawState.shapeTool !== 'pen' && !drawState.isEraser) {
+        var sx = drawState.shapeStartX, sy = drawState.shapeStartY;
+        var shapeData = { tool: drawState.shapeTool, x1: sx, y1: sy, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, fill: drawState.isFill };
+        drawShape(ctx, shapeData);
+        send({ type: 'draw', data: shapeData });
+      }
+    });
+    // Set default tool aktif
+    setShapeTool('pen');
     canvasInited = true;
   }
   resizeCanvas();
 }
 function getPos(e, canvas) { var rect = canvas.getBoundingClientRect(); return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) }; }
-function drawLine(ctx, x1, y1, x2, y2) { ctx.globalCompositeOperation = drawState.isEraser ? 'destination-out' : 'source-over'; ctx.strokeStyle = drawState.isEraser ? 'rgba(0,0,0,1)' : drawState.color; ctx.lineWidth = drawState.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.globalCompositeOperation = 'source-over'; }
-function drawRemote(data) { var canvas = document.getElementById('game-canvas'); var ctx = canvas.getContext('2d'); ctx.globalCompositeOperation = data.eraser ? 'destination-out' : 'source-over'; ctx.strokeStyle = data.eraser ? 'rgba(0,0,0,1)' : data.color; ctx.lineWidth = data.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(data.x1, data.y1); ctx.lineTo(data.x2, data.y2); ctx.stroke(); ctx.globalCompositeOperation = 'source-over'; }
+function drawLine(ctx, x1, y1, x2, y2) {
+  ctx.globalCompositeOperation = drawState.isEraser ? 'destination-out' : 'source-over';
+  ctx.strokeStyle = drawState.isEraser ? 'rgba(0,0,0,1)' : drawState.color;
+  ctx.lineWidth = drawState.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+// === SHAPE TOOLS ===
+var _shapePreviewEl = null;
+function setShapeTool(tool) {
+  drawState.shapeTool = tool;
+  drawState.isEraser = false;
+  document.getElementById('eraser-btn').classList.remove('active');
+  // highlight aktif tool
+  ['pen','line','rect','square','ellipse','circle'].forEach(function(t) {
+    var btn = document.getElementById('tool-' + t);
+    if (btn) btn.classList.toggle('active', t === tool);
+  });
+  document.getElementById('game-canvas').style.cursor = tool === 'pen' ? 'crosshair' : 'crosshair';
+}
+
+function toggleFill() {
+  drawState.isFill = !drawState.isFill;
+  var btn = document.getElementById('fill-btn');
+  btn.classList.toggle('active', drawState.isFill);
+}
+
+function drawShape(ctx, d) {
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.strokeStyle = d.color; ctx.lineWidth = d.size;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (d.fill) { ctx.fillStyle = d.color; }
+  var x1 = d.x1, y1 = d.y1, x2 = d.x2, y2 = d.y2;
+  ctx.beginPath();
+  if (d.tool === 'line') {
+    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  } else if (d.tool === 'rect') {
+    var w = x2 - x1, h = y2 - y1;
+    if (d.fill) ctx.fillRect(x1, y1, w, h);
+    ctx.strokeRect(x1, y1, w, h);
+  } else if (d.tool === 'square') {
+    var side = Math.min(Math.abs(x2-x1), Math.abs(y2-y1));
+    var sw = x2 < x1 ? -side : side, sh = y2 < y1 ? -side : side;
+    if (d.fill) ctx.fillRect(x1, y1, sw, sh);
+    ctx.strokeRect(x1, y1, sw, sh);
+  } else if (d.tool === 'ellipse') {
+    var rx = Math.abs(x2-x1)/2, ry = Math.abs(y2-y1)/2;
+    var cx = (x1+x2)/2, cy = (y1+y2)/2;
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2);
+    if (d.fill) ctx.fill();
+    ctx.stroke();
+  } else if (d.tool === 'circle') {
+    var r = Math.min(Math.abs(x2-x1), Math.abs(y2-y1))/2;
+    var ccx = x1 + (x2 < x1 ? -r : r), ccy = y1 + (y2 < y1 ? -r : r);
+    ctx.arc(ccx, ccy, r, 0, Math.PI*2);
+    if (d.fill) ctx.fill();
+    ctx.stroke();
+  }
+}
+
+function drawShapePreview(canvas, sx, sy, ex, ey) {
+  // Buat overlay canvas sementara untuk preview
+  if (!_shapePreviewEl) {
+    _shapePreviewEl = document.createElement('canvas');
+    _shapePreviewEl.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:10;opacity:0.7;';
+    canvas.parentElement.appendChild(_shapePreviewEl);
+  }
+  _shapePreviewEl.width = canvas.width; _shapePreviewEl.height = canvas.height;
+  _shapePreviewEl.style.width = canvas.style.width || canvas.width + 'px';
+  _shapePreviewEl.style.height = canvas.style.height || canvas.height + 'px';
+  // Posisikan overlay di atas canvas
+  var rect = canvas.getBoundingClientRect();
+  var parentRect = canvas.parentElement.getBoundingClientRect();
+  _shapePreviewEl.style.left = (rect.left - parentRect.left) + 'px';
+  _shapePreviewEl.style.top  = (rect.top  - parentRect.top)  + 'px';
+
+  var pctx = _shapePreviewEl.getContext('2d');
+  pctx.clearRect(0, 0, _shapePreviewEl.width, _shapePreviewEl.height);
+  // Gambar preview dengan setLineDash agar terlihat sebagai preview
+  pctx.setLineDash([6, 4]);
+  drawShape(pctx, { tool: drawState.shapeTool, x1: sx, y1: sy, x2: ex, y2: ey, color: drawState.color, size: Math.max(1, drawState.size), fill: drawState.isFill });
+  pctx.setLineDash([]);
+}
+
+function clearShapePreview() {
+  if (_shapePreviewEl) {
+    _shapePreviewEl.parentElement && _shapePreviewEl.parentElement.removeChild(_shapePreviewEl);
+    _shapePreviewEl = null;
+  }
+}
+function drawRemote(data) {
+  var canvas = document.getElementById('game-canvas');
+  var ctx = canvas.getContext('2d');
+  // data.tool bisa 'pen' (garis bebas), 'line', 'rect', 'square', 'ellipse', 'circle'
+  // atau tidak ada tool (backward compat = pen)
+  var tool = data.tool || 'pen';
+  if (tool === 'pen' || data.eraser) {
+    ctx.globalCompositeOperation = data.eraser ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = data.eraser ? 'rgba(0,0,0,1)' : data.color;
+    ctx.lineWidth = data.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(data.x1, data.y1); ctx.lineTo(data.x2, data.y2); ctx.stroke();
+    ctx.globalCompositeOperation = 'source-over';
+  } else {
+    drawShape(ctx, data);
+  }
+}
 function resetCanvas() {
   var canvas = document.getElementById('game-canvas');
   var ctx = canvas.getContext('2d');
@@ -1195,7 +1608,17 @@ function resetCanvas() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 function clearCanvas() { resetCanvas(); send({ type: 'clear_canvas' }); }
-function toggleEraser() { drawState.isEraser = !drawState.isEraser; document.getElementById('eraser-btn').classList.toggle('active', drawState.isEraser); }
+function toggleEraser() {
+  drawState.isEraser = !drawState.isEraser;
+  document.getElementById('eraser-btn').classList.toggle('active', drawState.isEraser);
+  if (drawState.isEraser) {
+    // Reset shape tool highlight
+    ['pen','line','rect','square','ellipse','circle'].forEach(function(t) {
+      var btn = document.getElementById('tool-' + t);
+      if (btn) btn.classList.remove('active');
+    });
+  }
+}
 
 // === CHAT + APPROVE ===
 function sendGuess() {
@@ -1373,6 +1796,71 @@ if (screen.orientation && screen.orientation.addEventListener) {
   window.addEventListener('orientationchange', function() { setTimeout(checkOrientation, 200); });
 }
 window.addEventListener('resize', function() { if (isMobile()) { setTimeout(checkOrientation, 100); } });
+
+// === CHESS TILE LOBBY BACKGROUND ===
+(function() {
+  var chessCanvas = document.getElementById('chess-bg');
+  if (!chessCanvas) return;
+  var cctx = chessCanvas.getContext('2d');
+  var tileSize = 48;
+  var offsetX = 0, offsetY = 0;
+  var speed = 0.4; // pixel per frame
+  var angle = Math.PI / 6; // arah gerak diagonal
+  var vx = Math.cos(angle) * speed;
+  var vy = Math.sin(angle) * speed;
+
+  var colors = ['rgba(255,255,255,0.03)', 'rgba(0,210,211,0.04)'];
+
+  function resize() {
+    chessCanvas.width  = window.innerWidth;
+    chessCanvas.height = window.innerHeight;
+  }
+
+  function draw() {
+    cctx.clearRect(0, 0, chessCanvas.width, chessCanvas.height);
+    var cols = Math.ceil(chessCanvas.width  / tileSize) + 2;
+    var rows = Math.ceil(chessCanvas.height / tileSize) + 2;
+    var startX = -(tileSize + (offsetX % tileSize));
+    var startY = -(tileSize + (offsetY % tileSize));
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        var idx = (r + c) % 2;
+        cctx.fillStyle = colors[idx];
+        cctx.fillRect(startX + c * tileSize, startY + r * tileSize, tileSize, tileSize);
+      }
+    }
+  }
+
+  var rafId = null;
+  function animate() {
+    var lobby = document.getElementById('screen-lobby');
+    if (!lobby || !lobby.classList.contains('active')) {
+      rafId = null; return;
+    }
+    offsetX = (offsetX + vx);
+    offsetY = (offsetY + vy);
+    if (offsetX > tileSize * 2) offsetX -= tileSize * 2;
+    if (offsetY > tileSize * 2) offsetY -= tileSize * 2;
+    draw();
+    rafId = requestAnimationFrame(animate);
+  }
+
+  window.startChessBg = function() {
+    if (!rafId) { resize(); animate(); }
+  };
+  window.stopChessBg = function() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  };
+
+  window.addEventListener('resize', function() {
+    if (document.getElementById('screen-lobby').classList.contains('active')) resize();
+  });
+
+  // Auto-start jika lobby aktif saat load
+  if (document.getElementById('screen-lobby').classList.contains('active')) {
+    window.startChessBg();
+  }
+})();
 </script>
 </body>
 </html>
