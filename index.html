@@ -746,7 +746,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 
 <script>
 // === HARDCODED CONFIG ===
-const SERVER_URL = 'https://mainyuk.secret5.workers.dev';
+const SERVER_URL = 'https://mainyuk.secret5.workers.dev/';
 
 // === STATE ===
 let ws = null;
@@ -853,17 +853,20 @@ async function openRoomList() {
 }
 function closeRoomList() { document.getElementById('room-list-overlay').classList.remove('show'); }
 
+var _roomListData = [];
+
 async function loadRoomList() {
   var container = document.getElementById('rl-rooms');
   container.innerHTML = '<div class="rl-empty">🔄 Memuat...</div>';
   try {
     var res = await fetch(SERVER_URL + '/rooms');
     var rooms = await res.json();
-    if (!Array.isArray(rooms) || rooms.length === 0) {
+    _roomListData = Array.isArray(rooms) ? rooms : [];
+    if (_roomListData.length === 0) {
       container.innerHTML = '<div class="rl-empty">😢 Belum ada room aktif.<br>Buat room baru dulu!</div>';
       return;
     }
-    container.innerHTML = rooms.map(function(r) {
+    container.innerHTML = _roomListData.map(function(r, idx) {
       var isFull = r.playerCount >= r.maxPlayers;
       var isPlaying = r.phase === 'playing';
       var phaseLabel = isPlaying
@@ -872,17 +875,24 @@ async function loadRoomList() {
       var lockBadge = r.hasPassword ? '<span class="rc-badge locked">🔒 Private</span>' : '';
       var countText = r.playerCount + '/' + r.maxPlayers + ' pemain';
       var canJoin = !isFull;
-      return '<div class="room-card' + (isFull ? ' full' : '') + (isPlaying ? ' playing' : '') + '" onclick="' + (canJoin ? 'tryJoinRoom(' + JSON.stringify(r.roomId) + ',' + JSON.stringify(r.roomName) + ',' + (r.hasPassword ? 'true' : 'false') + ')' : '') + '">'
+      return '<div class="room-card' + (isFull ? ' full' : '') + (isPlaying ? ' playing' : '') + '"'
+        + (canJoin ? ' onclick="tryJoinRoomByIdx(' + idx + ')"' : '') + '>'
         + '<div class="rc-info">'
         + '<div class="rc-name">' + escHtml(r.roomName) + '</div>'
         + '<div class="rc-meta">' + countText + ' ' + phaseLabel + ' ' + lockBadge + '</div>'
         + '</div>'
-        + (canJoin ? '<button class="rc-join-btn" onclick="event.stopPropagation();tryJoinRoom(' + JSON.stringify(r.roomId) + ',' + JSON.stringify(r.roomName) + ',' + (r.hasPassword ? 'true' : 'false') + ')">Join →</button>' : '<span style="color:var(--text-muted);font-size:0.8rem;flex-shrink:0;">Penuh</span>')
+        + (canJoin ? '<button class="rc-join-btn" onclick="event.stopPropagation();tryJoinRoomByIdx(' + idx + ')">Join →</button>' : '<span style="color:var(--text-muted);font-size:0.8rem;flex-shrink:0;">Penuh</span>')
         + '</div>';
     }).join('');
   } catch(e) {
     container.innerHTML = '<div class="rl-empty">❌ Gagal memuat room list.</div>';
   }
+}
+
+function tryJoinRoomByIdx(idx) {
+  var r = _roomListData[idx];
+  if (!r) return;
+  tryJoinRoom(r.roomId, r.roomName, r.hasPassword);
 }
 
 function escHtml(str) {
