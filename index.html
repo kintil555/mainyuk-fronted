@@ -173,6 +173,80 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .your-word-banner { background: linear-gradient(135deg, rgba(245,166,35,0.2), rgba(233,69,96,0.2)); border: 1px solid rgba(245,166,35,0.3); border-radius: 10px; padding: 6px 14px; text-align: center; font-size: 0.8rem; color: var(--text-muted); flex-shrink: 0; display: none; }
 .your-word-banner strong { color: var(--accent2); font-size: 1.1em; }
 
+/* === QUEUE OVERLAY === */
+#queue-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9998;
+  background: rgba(10, 10, 20, 0.96);
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 24px; padding: 30px; text-align: center;
+  backdrop-filter: blur(8px);
+}
+#queue-overlay.show { display: flex; }
+.queue-card {
+  background: var(--card); border-radius: 24px; padding: 36px 32px;
+  width: 100%; max-width: 420px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.queue-title {
+  font-family: 'Fredoka One', cursive; font-size: 1.8rem;
+  color: var(--accent2); margin-bottom: 6px;
+}
+.queue-sub { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px; }
+.queue-position-wrap {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px; width: 120px; height: 120px;
+}
+.queue-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.08);
+}
+.queue-ring-fill {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 4px solid var(--accent2);
+  border-right-color: transparent; border-bottom-color: transparent;
+  animation: spin 2s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.queue-pos-num {
+  font-family: 'Fredoka One', cursive; font-size: 3rem;
+  color: var(--accent2); line-height: 1;
+}
+.queue-pos-label { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 1px; }
+.queue-info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(255,255,255,0.05); border-radius: 12px;
+  padding: 12px 16px; margin-bottom: 10px;
+}
+.queue-info-label { font-size: 0.82rem; color: var(--text-muted); }
+.queue-info-val { font-weight: 800; font-size: 0.95rem; color: var(--text); }
+.queue-timer-bar-wrap {
+  background: rgba(255,255,255,0.08); border-radius: 8px;
+  height: 8px; overflow: hidden; margin: 16px 0 8px;
+}
+.queue-timer-bar {
+  height: 100%; border-radius: 8px;
+  background: linear-gradient(90deg, var(--accent2), var(--accent3));
+  transition: width 1s linear;
+}
+.queue-progress-label { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px; }
+.queue-cancel-btn {
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; padding: 10px 20px; color: var(--text-muted);
+  font-family: 'Nunito',sans-serif; font-weight: 700; font-size: 0.85rem;
+  cursor: pointer; transition: background 0.2s;
+}
+.queue-cancel-btn:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+.queue-dots span {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent2); margin: 0 3px;
+  animation: dotBounce 1.2s ease-in-out infinite;
+}
+.queue-dots span:nth-child(2) { animation-delay: 0.2s; }
+.queue-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+
 /* === ROTATE OVERLAY === */
 #rotate-overlay {
   display: none;
@@ -239,6 +313,43 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   </div>
   <div style="color:var(--text-muted);font-size:0.8rem;margin-top:8px;">
     Layar akan otomatis penuh setelah diputar
+  </div>
+</div>
+
+<!-- QUEUE OVERLAY -->
+<div id="queue-overlay">
+  <div class="queue-card">
+    <div class="queue-title">⏳ Sedang Antri</div>
+    <div class="queue-sub">Server lagi rame! Tenang, giliranmu akan tiba 😊</div>
+
+    <div class="queue-position-wrap">
+      <div class="queue-ring"></div>
+      <div class="queue-ring-fill"></div>
+      <div>
+        <div class="queue-pos-num" id="queue-pos-num">-</div>
+        <div class="queue-pos-label">ANTRIAN</div>
+      </div>
+    </div>
+
+    <div class="queue-info-row">
+      <span class="queue-info-label">⏱ Estimasi tunggu</span>
+      <span class="queue-info-val" id="queue-wait-text">-</span>
+    </div>
+    <div class="queue-info-row">
+      <span class="queue-info-label">👥 Orang di depanmu</span>
+      <span class="queue-info-val" id="queue-ahead-num">-</span>
+    </div>
+
+    <div class="queue-timer-bar-wrap">
+      <div class="queue-timer-bar" id="queue-bar" style="width:0%"></div>
+    </div>
+    <div class="queue-progress-label" id="queue-bar-label">Menunggu giliran...</div>
+
+    <div class="queue-dots" style="margin-bottom:16px">
+      <span></span><span></span><span></span>
+    </div>
+
+    <button class="queue-cancel-btn" onclick="cancelQueue()">✕ Batalkan Antrian</button>
   </div>
 </div>
 
@@ -562,6 +673,12 @@ function handleMessage(msg) {
   }
 }
 
+// === QUEUE STATE ===
+var queueId = null;
+var queuePollInterval = null;
+var queueStartWait = 0;
+var queueInitialWait = 0;
+
 // === LOBBY ===
 async function createAndJoinRoom() {
   var username = document.getElementById('username-input').value.trim();
@@ -571,29 +688,136 @@ async function createAndJoinRoom() {
     document.getElementById('captcha-error').classList.add('show');
     return;
   }
+  document.getElementById('create-room-btn').disabled = true;
+  document.getElementById('create-room-btn').textContent = '⏳ Memproses...';
+  await attemptCreateRoom(username, turnstileToken, null);
+}
+
+async function attemptCreateRoom(username, captchaToken, existingQueueId) {
   try {
     var res = await fetch(SERVER_URL + '/create-room', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ captcha: turnstileToken }),
+      body: JSON.stringify({ captcha: captchaToken, queueId: existingQueueId }),
     });
     var data = await res.json();
+
+    if (res.status === 202 && data.queued) {
+      // Masuk antrian
+      queueId = data.queueId;
+      queueInitialWait = data.estimatedWait;
+      queueStartWait = Date.now();
+      showQueueOverlay(data.position, data.estimatedWait);
+      startQueuePolling(username, captchaToken);
+      return;
+    }
+
     if (data.error) {
       showToast('❌ ' + data.error);
-      // Reset turnstile
-      turnstileToken = null;
-      turnstileVerified = false;
-      document.getElementById('create-room-btn').disabled = true;
+      resetCreateBtn();
+      turnstileToken = null; turnstileVerified = false;
       if (window.turnstile) { window.turnstile.reset('#turnstile-widget'); }
       return;
     }
+
+    // Berhasil dapat room
+    hideQueueOverlay();
+    stopQueuePolling();
     currentRoomId = data.roomId;
+    myUsername = username;
+    document.getElementById('room-code-display').textContent = currentRoomId;
+    resetCreateBtn();
+    if (connectWS(currentRoomId, username)) { showScreen('screen-waiting'); }
+
   } catch(e) {
+    // Fallback jika server error
+    hideQueueOverlay();
+    stopQueuePolling();
     currentRoomId = generateRoomId();
+    myUsername = username;
+    document.getElementById('room-code-display').textContent = currentRoomId;
+    resetCreateBtn();
+    if (connectWS(currentRoomId, username)) { showScreen('screen-waiting'); }
   }
-  myUsername = username;
-  document.getElementById('room-code-display').textContent = currentRoomId;
-  if (connectWS(currentRoomId, username)) { showScreen('screen-waiting'); }
+}
+
+function resetCreateBtn() {
+  var btn = document.getElementById('create-room-btn');
+  btn.disabled = false;
+  btn.textContent = '🚀 Buat Room';
+}
+
+function startQueuePolling(username, captchaToken) {
+  stopQueuePolling();
+  queuePollInterval = setInterval(async function() {
+    try {
+      var res = await fetch(SERVER_URL + '/queue-status?queueId=' + queueId);
+      var data = await res.json();
+
+      if (data.status === 'ready') {
+        // Giliran tiba! Buat room sekarang
+        stopQueuePolling();
+        updateQueueUI(1, 0);
+        document.getElementById('queue-bar-label').textContent = '🎉 Giliranmu! Membuat room...';
+        setTimeout(async function() {
+          await attemptCreateRoom(username, captchaToken, queueId);
+        }, 500);
+      } else if (data.status === 'queued') {
+        updateQueueUI(data.position, data.estimatedWait);
+      } else if (data.status === 'not_found') {
+        // Queue expired, coba lagi dari awal
+        stopQueuePolling();
+        hideQueueOverlay();
+        resetCreateBtn();
+        showToast('⚠️ Antrian kedaluwarsa, silakan coba lagi.');
+      }
+    } catch(e) {
+      // Network error, tetap polling
+    }
+  }, 3000); // Poll setiap 3 detik
+}
+
+function stopQueuePolling() {
+  if (queuePollInterval) { clearInterval(queuePollInterval); queuePollInterval = null; }
+}
+
+function showQueueOverlay(position, estimatedWait) {
+  document.getElementById('queue-overlay').classList.add('show');
+  updateQueueUI(position, estimatedWait);
+}
+
+function hideQueueOverlay() {
+  document.getElementById('queue-overlay').classList.remove('show');
+}
+
+function updateQueueUI(position, estimatedWait) {
+  document.getElementById('queue-pos-num').textContent = position;
+  document.getElementById('queue-ahead-num').textContent = Math.max(0, position - 1) + ' orang';
+
+  // Format waktu
+  var mins = Math.floor(estimatedWait / 60);
+  var secs = estimatedWait % 60;
+  var timeText = mins > 0 ? mins + ' menit ' + (secs > 0 ? secs + ' detik' : '') : secs + ' detik';
+  document.getElementById('queue-wait-text').textContent = estimatedWait > 0 ? '~' + timeText : 'Sebentar lagi!';
+
+  // Progress bar (berdasarkan waktu berlalu vs estimasi awal)
+  var elapsed = (Date.now() - queueStartWait) / 1000;
+  var pct = queueInitialWait > 0 ? Math.min(95, (elapsed / queueInitialWait) * 100) : 0;
+  document.getElementById('queue-bar').style.width = pct + '%';
+
+  if (position <= 1) {
+    document.getElementById('queue-bar-label').textContent = '🔥 Hampir giliran kamu!';
+  } else {
+    document.getElementById('queue-bar-label').textContent = 'Masih ada ' + (position - 1) + ' orang di depanmu';
+  }
+}
+
+function cancelQueue() {
+  stopQueuePolling();
+  hideQueueOverlay();
+  queueId = null;
+  resetCreateBtn();
+  showToast('Antrian dibatalkan.');
 }
 
 function joinRoom() {
