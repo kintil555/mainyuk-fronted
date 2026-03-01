@@ -162,7 +162,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 
 /* game-body: canvas kiri + draw tools + sidebar kanan */
 .game-body { display: flex; flex: 1; overflow: hidden; }
-.canvas-area { flex: 1; display: flex; flex-direction: row; min-width: 0; background: var(--bg); position: relative; overflow: hidden; }
+.canvas-area { flex: 1; display: flex; flex-direction: row; justify-content: center; align-items: center; min-width: 0; background: var(--bg); position: relative; overflow: hidden; }
 #game-canvas { display: block; background: white; cursor: crosshair; touch-action: none; flex: 1; min-width: 0; }
 .canvas-overlay { position: absolute; inset: 0; background: transparent; z-index: 5; display: none; }
 
@@ -1044,8 +1044,8 @@ function submitWord() {
   document.getElementById('canvas-overlay').style.display = 'none';
   setChatPlaceholder('Chat ke peserta...', false);
   addChatMsg('🎨 Kamu sedang menggambar — semangat!', 'system', '', null);
-  // Resize canvas (draw tools muncul)
-  canvasInited = false; initCanvas();
+  // Resize canvas (draw tools muncul) — tanpa reset gambar
+  resizeCanvas();
 }
 function setChatPlaceholder(text, disabled) {
   ['chat-input', 'chat-input-sidebar'].forEach(function(id) {
@@ -1061,27 +1061,75 @@ function updateTimer(t) {
 
 // === CANVAS ===
 var canvasInited = false;
+
+// Simpan snapshot gambar sebelum resize, kemudian restore
+function resizeCanvas() {
+  var canvas = document.getElementById('game-canvas');
+  var ctx = canvas.getContext('2d');
+
+  // Ukuran area yang tersedia
+  var header  = document.querySelector('.game-header');
+  var banner  = document.getElementById('your-word-banner');
+  var tools   = document.getElementById('draw-tools');
+  var sidebar = document.getElementById('chat-sidebar');
+  var bottom  = document.getElementById('bottom-panel');
+
+  var headerH  = header  ? header.offsetHeight : 0;
+  var bannerH  = (banner && banner.style.display !== 'none') ? banner.offsetHeight : 0;
+  var toolsW   = (tools  && tools.classList.contains('visible')) ? tools.offsetWidth : 0;
+  var sidebarW = (sidebar && getComputedStyle(sidebar).display !== 'none') ? sidebar.offsetWidth : 0;
+  var bottomH  = (bottom && getComputedStyle(bottom).display !== 'none') ? bottom.offsetHeight : 0;
+
+  var availW = window.innerWidth  - toolsW - sidebarW;
+  var availH = window.innerHeight - headerH - bannerH - bottomH;
+
+  // === BATAS UKURAN KANVAS ===
+  // Aspect ratio 4:3, tidak melebihi area yang tersedia, maks 900×675
+  var MAX_W = Math.min(availW, 900);
+  var MAX_H = Math.min(availH, 675);
+  var ratio  = 4 / 3;
+
+  var newW, newH;
+  if (MAX_W / ratio <= MAX_H) {
+    newW = MAX_W;
+    newH = Math.floor(MAX_W / ratio);
+  } else {
+    newH = MAX_H;
+    newW = Math.floor(MAX_H * ratio);
+  }
+
+  // Simpan gambar lama sebelum ubah dimensi
+  var snapshot = null;
+  if (canvas.width > 0 && canvas.height > 0) {
+    try { snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height); } catch(e) {}
+  }
+
+  canvas.width  = newW;
+  canvas.height = newH;
+
+  // Latar putih dulu
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, newW, newH);
+
+  // Restore gambar lama (scale ke ukuran baru)
+  if (snapshot) {
+    var tmp = document.createElement('canvas');
+    tmp.width = snapshot.width; tmp.height = snapshot.height;
+    tmp.getContext('2d').putImageData(snapshot, 0, 0);
+    ctx.drawImage(tmp, 0, 0, snapshot.width, snapshot.height, 0, 0, newW, newH);
+  }
+
+  // Pusatkan canvas di dalam canvas-area via CSS
+  canvas.style.display  = 'block';
+  canvas.style.margin   = 'auto';
+  canvas.style.maxWidth = '100%';
+}
+
 function initCanvas() {
   var canvas = document.getElementById('game-canvas');
   var ctx = canvas.getContext('2d');
-  function resize() {
-    var header = document.querySelector('.game-header');
-    var banner = document.getElementById('your-word-banner');
-    var tools = document.getElementById('draw-tools');
-    var sidebar = document.getElementById('chat-sidebar');
-    var bottom = document.getElementById('bottom-panel');
-    var headerH = header ? header.offsetHeight : 0;
-    var bannerH = (banner && banner.style.display !== 'none') ? banner.offsetHeight : 0;
-    var toolsW = (tools && tools.classList.contains('visible')) ? tools.offsetWidth : 0;
-    var sidebarW = (sidebar && getComputedStyle(sidebar).display !== 'none') ? sidebar.offsetWidth : 0;
-    var bottomH = (bottom && getComputedStyle(bottom).display !== 'none') ? bottom.offsetHeight : 0;
-    canvas.width = window.innerWidth - toolsW - sidebarW;
-    canvas.height = window.innerHeight - headerH - bannerH - bottomH;
-    // Isi putih setelah resize
-    ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
   if (!canvasInited) {
-    window.addEventListener('resize', function() { resize(); });
+    window.addEventListener('resize', function() { resizeCanvas(); });
     var cp = document.getElementById('color-picker');
     cp.innerHTML = '';
     COLORS.forEach(function(c) {
@@ -1115,12 +1163,18 @@ function initCanvas() {
     canvas.addEventListener('touchend', function() { drawState.isDrawing = false; });
     canvasInited = true;
   }
-  resize();
+  resizeCanvas();
 }
 function getPos(e, canvas) { var rect = canvas.getBoundingClientRect(); return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) }; }
 function drawLine(ctx, x1, y1, x2, y2) { ctx.globalCompositeOperation = drawState.isEraser ? 'destination-out' : 'source-over'; ctx.strokeStyle = drawState.isEraser ? 'rgba(0,0,0,1)' : drawState.color; ctx.lineWidth = drawState.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.globalCompositeOperation = 'source-over'; }
 function drawRemote(data) { var canvas = document.getElementById('game-canvas'); var ctx = canvas.getContext('2d'); ctx.globalCompositeOperation = data.eraser ? 'destination-out' : 'source-over'; ctx.strokeStyle = data.eraser ? 'rgba(0,0,0,1)' : data.color; ctx.lineWidth = data.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(data.x1, data.y1); ctx.lineTo(data.x2, data.y2); ctx.stroke(); ctx.globalCompositeOperation = 'source-over'; }
-function resetCanvas() { var canvas = document.getElementById('game-canvas'); var ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+function resetCanvas() {
+  var canvas = document.getElementById('game-canvas');
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
 function clearCanvas() { resetCanvas(); send({ type: 'clear_canvas' }); }
 function toggleEraser() { drawState.isEraser = !drawState.isEraser; document.getElementById('eraser-btn').classList.toggle('active', drawState.isEraser); }
 
@@ -1212,7 +1266,8 @@ function toggleSidebar() {
   var icon = document.getElementById('sidebar-toggle-icon');
   sidebar.classList.toggle('collapsed', sidebarCollapsed);
   icon.textContent = sidebarCollapsed ? '◀' : '▶';
-  setTimeout(function() { canvasInited = false; initCanvas(); }, 280);
+  // Pakai resizeCanvas (bukan initCanvas) agar gambar tidak hilang
+  setTimeout(function() { resizeCanvas(); }, 280);
 }
 
 // === ROUND/GAME END ===
@@ -1279,11 +1334,11 @@ function checkOrientation() {
       hasEnteredLandscape = true;
       setTimeout(function() {
         tryFullscreen();
-        setTimeout(function() { if (document.getElementById('screen-game').classList.contains('active')) { canvasInited = false; initCanvas(); } }, 400);
+        setTimeout(function() { if (document.getElementById('screen-game').classList.contains('active')) { resizeCanvas(); } }, 400);
       }, 150);
     } else {
       tryFullscreen();
-      setTimeout(function() { if (document.getElementById('screen-game').classList.contains('active')) { canvasInited = false; initCanvas(); } }, 300);
+      setTimeout(function() { if (document.getElementById('screen-game').classList.contains('active')) { resizeCanvas(); } }, 300);
     }
   } else {
     overlay.classList.add('show'); exitFullscreen();
