@@ -172,12 +172,75 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .toast.show { transform: translateX(-50%) translateY(0); }
 .your-word-banner { background: linear-gradient(135deg, rgba(245,166,35,0.2), rgba(233,69,96,0.2)); border: 1px solid rgba(245,166,35,0.3); border-radius: 10px; padding: 6px 14px; text-align: center; font-size: 0.8rem; color: var(--text-muted); flex-shrink: 0; display: none; }
 .your-word-banner strong { color: var(--accent2); font-size: 1.1em; }
+
+/* === ROTATE OVERLAY === */
+#rotate-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px;
+  text-align: center;
+  padding: 30px;
+}
+#rotate-overlay.show { display: flex; }
+.rotate-phone-icon {
+  font-size: 5rem;
+  animation: rotateAnim 1.8s ease-in-out infinite;
+}
+@keyframes rotateAnim {
+  0%   { transform: rotate(0deg); }
+  35%  { transform: rotate(-90deg); }
+  65%  { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+.rotate-title {
+  font-family: 'Fredoka One', cursive;
+  font-size: 1.8rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.rotate-sub { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; }
+.rotate-glow {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,210,211,0.3), transparent 70%);
+  position: absolute; animation: glowPulse 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes glowPulse { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.8);opacity:0.1} }
+
+/* Fullscreen landscape compact */
+@media (orientation: landscape) and (max-height: 500px) {
+  .game-header { padding: 4px 10px; }
+  .timer-num { font-size: 1.4rem; }
+  .draw-tools { padding: 4px 8px; gap: 5px; }
+  .color-swatch { width: 18px; height: 18px; }
+  .sidebar { width: 155px; }
+  .panel-title { margin-bottom: 4px; }
+  .player-score-item { padding: 2px 0; font-size: 0.78rem; }
+  .chat-msg { font-size: 0.72rem; }
+}
 </style>
 </head>
 <body>
 
 <div id="conn-status"></div>
 <div class="toast" id="toast"></div>
+
+<!-- ROTATE OVERLAY (mobile portrait) -->
+<div id="rotate-overlay">
+  <div class="rotate-glow"></div>
+  <div class="rotate-phone-icon">📱</div>
+  <div class="rotate-title">Putar HP-mu!</div>
+  <div class="rotate-sub">
+    Miringkan HP ke posisi <strong style="color:var(--accent3)">landscape</strong><br>
+    untuk pengalaman bermain terbaik 🎨
+  </div>
+  <div style="color:var(--text-muted);font-size:0.8rem;margin-top:8px;">
+    Layar akan otomatis penuh setelah diputar
+  </div>
+</div>
 
 <!-- LOBBY -->
 <div id="screen-lobby" class="screen active">
@@ -885,6 +948,110 @@ function toggleMobileChat() {
 // === INIT ===
 document.getElementById('join-code-input').addEventListener('input', function() {
   this.value = this.value.toUpperCase();
+});
+
+// === MOBILE ORIENTATION & FULLSCREEN ===
+var isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+var hasEnteredLandscape = false;
+
+function isMobile() {
+  return isMobileDevice || (navigator.maxTouchPoints > 1 && Math.min(window.screen.width, window.screen.height) < 768);
+}
+
+function isLandscape() {
+  if (screen.orientation && screen.orientation.type) {
+    return screen.orientation.type.includes('landscape');
+  }
+  return window.innerWidth > window.innerHeight;
+}
+
+function tryFullscreen() {
+  var el = document.documentElement;
+  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+    if (el.requestFullscreen) {
+      el.requestFullscreen({ navigationUI: 'hide' }).catch(function() {});
+    } else if (el.webkitRequestFullscreen) {
+      el.webkitRequestFullscreen();
+    }
+  }
+}
+
+function exitFullscreen() {
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(function() {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+}
+
+function checkOrientation() {
+  if (!isMobile()) return;
+
+  var overlay = document.getElementById('rotate-overlay');
+
+  if (isLandscape()) {
+    // Sembunyikan overlay, minta fullscreen
+    overlay.classList.remove('show');
+    if (!hasEnteredLandscape) {
+      hasEnteredLandscape = true;
+      // Sedikit delay agar browser siap
+      setTimeout(function() {
+        tryFullscreen();
+        // Re-init canvas setelah fullscreen settle
+        setTimeout(function() {
+          if (typeof initCanvas === 'function' && document.getElementById('screen-game').classList.contains('active')) {
+            canvasInited = false;
+            initCanvas();
+          }
+        }, 400);
+      }, 150);
+    } else {
+      // Sudah pernah landscape, langsung fullscreen lagi kalau perlu
+      tryFullscreen();
+      setTimeout(function() {
+        if (typeof initCanvas === 'function' && document.getElementById('screen-game').classList.contains('active')) {
+          canvasInited = false;
+          initCanvas();
+        }
+      }, 300);
+    }
+  } else {
+    // Portrait: tampilkan overlay
+    overlay.classList.add('show');
+    exitFullscreen();
+  }
+}
+
+// Deteksi awal saat halaman load
+if (isMobile()) {
+  // Kalau sudah landscape dari awal, langsung proceed
+  if (isLandscape()) {
+    hasEnteredLandscape = true;
+    setTimeout(tryFullscreen, 500);
+  } else {
+    // Portrait: tampilkan overlay rotate
+    document.getElementById('rotate-overlay').classList.add('show');
+  }
+}
+
+// Dengarkan perubahan orientasi
+if (screen.orientation && screen.orientation.addEventListener) {
+  screen.orientation.addEventListener('change', function() {
+    setTimeout(checkOrientation, 100);
+  });
+} else {
+  window.addEventListener('orientationchange', function() {
+    setTimeout(checkOrientation, 200);
+  });
+}
+
+// Fallback: resize event untuk browser yang tidak support orientationchange
+window.addEventListener('resize', function() {
+  if (isMobile()) {
+    setTimeout(checkOrientation, 100);
+  }
 });
 </script>
 </body>
