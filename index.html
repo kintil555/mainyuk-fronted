@@ -325,17 +325,106 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 }
 @keyframes glowPulse { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.8);opacity:0.1} }
 
-/* Fullscreen landscape compact */
+/* === MOBILE LANDSCAPE: CLEAN UI === */
 @media (orientation: landscape) and (max-height: 500px) {
-  .game-header { padding: 4px 10px; }
-  .timer-num { font-size: 1.4rem; }
-  .draw-tools { padding: 4px 8px; gap: 5px; }
-  .color-swatch { width: 18px; height: 18px; }
-  .sidebar { width: 155px; }
-  .panel-title { margin-bottom: 4px; }
-  .player-score-item { padding: 2px 0; font-size: 0.78rem; }
-  .chat-msg { font-size: 0.72rem; }
+  /* Header kompak */
+  .game-header { padding: 3px 8px; gap: 6px; }
+  .timer-num { font-size: 1.3rem; }
+  .round-text { font-size: 0.65rem; }
+  .drawer-text { font-size: 0.75rem; }
+  .word-display { font-size: 0.8rem; letter-spacing: 4px; padding: 2px; }
+
+  /* Game body: canvas + tools vertikal + chat sidebar */
+  .game-body { flex-direction: row; flex: 1; overflow: hidden; }
+
+  /* Canvas area pake sisa ruang */
+  .canvas-area { flex: 1; min-width: 0; }
+
+  /* Tools lebih kecil */
+  .draw-tools { padding: 4px 3px; gap: 4px; width: 42px; }
+  .color-swatch { width: 20px; height: 20px; }
+  .tool-btn-v { width: 30px; height: 30px; font-size: 0.85rem; }
+  .size-btn { transform: scale(0.85); }
+
+  /* Bottom panel: sembunyikan di landscape mobile, ganti dengan chat sidebar */
+  .bottom-panel { display: none !important; }
+
+  /* Chat sidebar kanan (mobile landscape only) */
+  .chat-sidebar-mobile {
+    display: flex !important;
+    flex-direction: column;
+    width: 200px;
+    background: var(--surface);
+    border-left: 1px solid rgba(255,255,255,0.07);
+    flex-shrink: 0;
+    overflow: hidden;
+    transition: width 0.25s ease;
+  }
+  .chat-sidebar-mobile.collapsed {
+    width: 36px;
+  }
+  .chat-sidebar-mobile .score-strip {
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+    gap: 3px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    overflow-y: auto;
+    max-height: 80px;
+    flex-shrink: 0;
+  }
+  .chat-sidebar-mobile .score-strip .score-chip {
+    flex-direction: row;
+    font-size: 0.7rem;
+  }
+  .chat-sidebar-mobile .chat-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .chat-sidebar-mobile .panel-title { font-size: 0.6rem; padding: 2px 6px; }
+  .chat-sidebar-mobile #chat-log-mobile { flex: 1; overflow-y: auto; padding: 3px 6px; display: flex; flex-direction: column; gap: 2px; scroll-behavior: smooth; }
+  .chat-sidebar-mobile #chat-log-mobile::-webkit-scrollbar { width: 2px; }
+  .chat-sidebar-mobile .chat-msg { font-size: 0.68rem; }
+  .chat-sidebar-mobile .chat-input-area { padding: 3px 5px; gap: 3px; }
+  .chat-sidebar-mobile .chat-input-area input { font-size: 0.75rem; padding: 5px 7px; }
+  .chat-sidebar-mobile .chat-input-area button { padding: 5px 8px; font-size: 0.75rem; }
+
+  /* Toggle button chat sidebar */
+  .chat-toggle-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    background: rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    cursor: pointer;
+    flex-shrink: 0;
+    user-select: none;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    gap: 4px;
+    font-weight: 700;
+  }
+  .chat-sidebar-mobile.collapsed .chat-toggle-btn-label { display: none; }
+  .chat-sidebar-mobile.collapsed .score-strip,
+  .chat-sidebar-mobile.collapsed .chat-panel { display: none !important; }
+  .chat-sidebar-mobile.collapsed .chat-toggle-btn {
+    flex: 1;
+    flex-direction: column;
+    height: 100%;
+    writing-mode: vertical-rl;
+  }
+
+  /* Your word banner lebih kecil */
+  .your-word-banner { padding: 2px 10px; font-size: 0.72rem; }
 }
+
+/* Default: chat sidebar hanya di landscape mobile */
+.chat-sidebar-mobile { display: none; }
+.chat-toggle-btn { display: none; }
 </style>
 </head>
 <body>
@@ -540,6 +629,22 @@ input[type="text"]::placeholder { color: var(--text-muted); }
         <button class="tool-btn-v" onclick="clearCanvas()" title="Bersihkan">🗑️</button>
       </div>
     </div>
+    <!-- CHAT SIDEBAR (hanya tampil di landscape mobile) -->
+    <div class="chat-sidebar-mobile" id="chat-sidebar-mobile">
+      <div class="chat-toggle-btn" onclick="toggleMobileChat()">
+        <span id="chat-toggle-icon">◀</span>
+        <span class="chat-toggle-btn-label"> Chat</span>
+      </div>
+      <div class="score-strip" id="score-strip-mobile"></div>
+      <div class="chat-panel">
+        <div class="panel-title">💬 Chat</div>
+        <div id="chat-log-mobile"></div>
+        <div class="chat-input-area">
+          <input type="text" id="chat-input-mobile" placeholder="Tebak..." autocomplete="off">
+          <button onclick="sendGuessMobile()">➤</button>
+        </div>
+      </div>
+    </div>
   </div>
   <!-- Bottom panel: skor + chat -->
   <div class="bottom-panel">
@@ -736,6 +841,8 @@ function handleMessage(msg) {
     document.getElementById('canvas-overlay').style.display = 'block';
     document.getElementById('chat-input').placeholder = 'Ketik tebakanmu...';
     document.getElementById('chat-input').disabled = false;
+    document.getElementById('chat-input-mobile').placeholder = 'Tebak...';
+    document.getElementById('chat-input-mobile').disabled = false;
     addChatMsg('🎨 ' + msg.drawerName + ' sedang memilih kata...', 'system', '', null);
   } else if (msg.type === 'draw') {
     if (!isDrawer) { drawRemote(msg.data); }
@@ -1104,6 +1211,8 @@ function submitWord() {
   document.getElementById('canvas-overlay').style.display = 'none';
   document.getElementById('chat-input').placeholder = 'Chat ke peserta...';
   document.getElementById('chat-input').disabled = false;
+  document.getElementById('chat-input-mobile').placeholder = 'Chat...';
+  document.getElementById('chat-input-mobile').disabled = false;
   addChatMsg('🎨 Kamu sedang menggambar — semangat!', 'system', '', null);
 }
 
@@ -1122,9 +1231,15 @@ function initCanvas() {
   function resize() {
     var headerH = document.querySelector('.game-header').offsetHeight || 0;
     var bannerH = document.getElementById('your-word-banner').offsetHeight || 0;
-    var bottomH = document.querySelector('.bottom-panel') ? document.querySelector('.bottom-panel').offsetHeight : 0;
     var toolsW = document.getElementById('draw-tools').classList.contains('visible') ? document.getElementById('draw-tools').offsetWidth : 0;
-    canvas.width = (canvas.parentElement.clientWidth || window.innerWidth) - toolsW;
+    var isMobileLandscape = isMobile() && isLandscape();
+    var bottomH = isMobileLandscape ? 0 : (document.querySelector('.bottom-panel') ? document.querySelector('.bottom-panel').offsetHeight : 0);
+    var sidebarW = 0;
+    if (isMobileLandscape) {
+      var sidebar = document.getElementById('chat-sidebar-mobile');
+      sidebarW = sidebar ? sidebar.offsetWidth : 0;
+    }
+    canvas.width = window.innerWidth - toolsW - sidebarW;
     canvas.height = window.innerHeight - headerH - bannerH - bottomH;
     resetCanvas();
   }
@@ -1191,7 +1306,8 @@ function approveGuess(clientId, btnEl, msgEl) {
   msgEl.classList.add('correct');
 }
 function addChatMsg(text, type, username, approveClientId) {
-  var log = document.getElementById('chat-log');
+  var logs = [document.getElementById('chat-log'), document.getElementById('chat-log-mobile')];
+  logs.forEach(function(log) {
   if (!log) return;
   var msgEl = document.createElement('div');
   msgEl.className = 'chat-msg ' + type;
@@ -1206,7 +1322,7 @@ function addChatMsg(text, type, username, approveClientId) {
     txt.textContent = ' ' + text;
     msgEl.appendChild(who);
     msgEl.appendChild(txt);
-    if (approveClientId) {
+    if (approveClientId && log.id === 'chat-log') {
       var btn = document.createElement('button');
       btn.className = 'approve-btn';
       btn.textContent = '✓';
@@ -1217,15 +1333,17 @@ function addChatMsg(text, type, username, approveClientId) {
   }
   log.appendChild(msgEl);
   log.scrollTop = log.scrollHeight;
+  });
 }
-function clearChatLog() { document.getElementById('chat-log').innerHTML = ''; }
+function clearChatLog() { 
+  document.getElementById('chat-log').innerHTML = ''; 
+  var m = document.getElementById('chat-log-mobile'); 
+  if (m) m.innerHTML = ''; 
+}
 
 // === SCORES ===
 function renderScoreStrip() {
-  var strip = document.getElementById('score-strip');
-  if (!strip) return;
-  var sorted = players.slice().sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
-  strip.innerHTML = sorted.map(function(p, i) {
+  var html = players.slice().sort(function(a, b) { return (b.score || 0) - (a.score || 0); }).map(function(p, i) {
     var guessed = correctGuessers.has(p.clientId);
     var avatar = AVATARS[players.indexOf(p) % AVATARS.length];
     return '<div class="score-chip' + (guessed ? ' guessed' : '') + '">' +
@@ -1233,6 +1351,10 @@ function renderScoreStrip() {
       '<span class="chip-name">' + p.username + '</span>' +
       '<span class="chip-score">' + (p.score || 0) + '</span></div>';
   }).join('');
+  var strip = document.getElementById('score-strip');
+  if (strip) strip.innerHTML = html;
+  var stripMobile = document.getElementById('score-strip-mobile');
+  if (stripMobile) stripMobile.innerHTML = html;
 }
 function updateScores(scores) {
   players = players.map(function(p) {
@@ -1280,6 +1402,34 @@ function showGameEnd(msg) {
 
 // === INIT ===
 document.getElementById('chat-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendGuess(); });
+
+// === MOBILE CHAT SIDEBAR ===
+var mobileChatCollapsed = false;
+function toggleMobileChat() {
+  mobileChatCollapsed = !mobileChatCollapsed;
+  var sidebar = document.getElementById('chat-sidebar-mobile');
+  var icon = document.getElementById('chat-toggle-icon');
+  sidebar.classList.toggle('collapsed', mobileChatCollapsed);
+  icon.textContent = mobileChatCollapsed ? '▶' : '◀';
+  // Resize canvas setelah animasi selesai
+  setTimeout(function() {
+    if (typeof initCanvas === 'function') {
+      canvasInited = false;
+      initCanvas();
+    }
+  }, 280);
+}
+
+function sendGuessMobile() {
+  var input = document.getElementById('chat-input-mobile');
+  var text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  // Sync ke fungsi utama
+  if (isDrawer) { send({ type: 'chat', text: text }); addChatMsg(text, 'normal', myUsername, null); }
+  else { send({ type: 'guess', text: text }); }
+}
+document.getElementById('chat-input-mobile').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendGuessMobile(); });
 
 // === MOBILE ORIENTATION & FULLSCREEN ===
 var isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
