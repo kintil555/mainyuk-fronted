@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>GambarYuk! 🎨</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<!-- Cloudflare Turnstile -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
 :root {
   --bg: #1a1a2e;
@@ -29,7 +31,6 @@ body {
   overflow: hidden;
 }
 
-/* Animated BG */
 body::before {
   content: '';
   position: fixed;
@@ -51,7 +52,6 @@ h1.logo {
   letter-spacing: 2px;
 }
 
-/* ===== SCREENS ===== */
 .screen {
   display: none;
   position: fixed;
@@ -110,6 +110,76 @@ input[type="text"] {
 input[type="text"]:focus { border-color: var(--accent3); }
 input[type="text"]::placeholder { color: var(--text-muted); }
 
+/* ===== CAPTCHA STYLES ===== */
+.captcha-section {
+  margin: 14px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.captcha-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+}
+
+.captcha-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+/* Turnstile widget customization via theme attribute */
+.cf-turnstile {
+  transform-origin: left center;
+}
+
+/* Error state */
+.captcha-error {
+  font-size: 0.78rem;
+  color: var(--accent);
+  display: none;
+  gap: 4px;
+  align-items: center;
+}
+.captcha-error.show { display: flex; }
+
+/* Worker URL field */
+.worker-url-section {
+  margin-bottom: 16px;
+}
+.worker-url-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 8px;
+}
+.worker-url-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.worker-url-row input {
+  flex: 1;
+  font-size: 0.85rem;
+  padding: 10px 12px;
+}
+.site-key-input {
+  font-size: 0.85rem;
+  padding: 10px 12px;
+  font-family: 'Courier New', monospace !important;
+  letter-spacing: 0;
+}
+
 .btn {
   border: none;
   border-radius: 12px;
@@ -123,12 +193,13 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   width: 100%;
 }
 .btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .btn-primary {
   background: linear-gradient(135deg, var(--accent), #c0392b);
   color: white;
   box-shadow: 0 4px 15px rgba(233,69,96,0.4);
 }
-.btn-primary:hover { box-shadow: 0 6px 20px rgba(233,69,96,0.6); }
+.btn-primary:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(233,69,96,0.6); }
 .btn-secondary {
   background: linear-gradient(135deg, var(--accent3), #0097a7);
   color: white;
@@ -142,6 +213,12 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   background: linear-gradient(135deg, #00b894, #00cec9);
   color: white;
   box-shadow: 0 4px 15px rgba(0,184,148,0.3);
+}
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+  width: auto;
 }
 
 .divider {
@@ -161,6 +238,64 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 }
 .divider::before { left: 0; }
 .divider::after { right: 0; }
+
+/* Captcha info box */
+.captcha-info-box {
+  background: rgba(0,210,211,0.07);
+  border: 1px solid rgba(0,210,211,0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.captcha-info-box .icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+.captcha-info-box p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+.captcha-info-box a { color: var(--accent3); text-decoration: none; }
+.captcha-info-box a:hover { text-decoration: underline; }
+
+/* Settings toggle */
+.settings-toggle {
+  width: 100%;
+  background: none;
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  transition: border-color 0.2s, color 0.2s;
+}
+.settings-toggle:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+.settings-toggle .arrow { transition: transform 0.2s; }
+.settings-toggle.open .arrow { transform: rotate(180deg); }
+
+.captcha-settings {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 14px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.captcha-settings.open { display: flex; }
+.captcha-settings label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: block;
+}
 
 /* ===== WAITING ROOM ===== */
 #screen-waiting {
@@ -290,7 +425,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   padding: 6px;
 }
 
-/* Game body */
 .game-body {
   display: flex;
   flex: 1;
@@ -298,7 +432,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   gap: 0;
 }
 
-/* Canvas area */
 .canvas-area {
   flex: 1;
   display: flex;
@@ -379,7 +512,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .tool-btn:hover { background: rgba(255,255,255,0.2); }
 .tool-btn.eraser.active { background: var(--accent2); color: #1a1a2e; }
 
-/* Sidebar */
 .sidebar {
   width: 200px;
   display: flex;
@@ -482,7 +614,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 }
 .chat-input-area button:hover { opacity: 0.8; }
 
-/* Canvas overlay for non-drawers */
 .canvas-overlay {
   position: absolute;
   inset: 0;
@@ -491,7 +622,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   display: none;
 }
 
-/* ===== OVERLAY MESSAGES ===== */
+/* ===== OVERLAYS ===== */
 .overlay-msg {
   position: fixed;
   inset: 0;
@@ -525,7 +656,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .overlay-card p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 6px; }
 .overlay-card .big { font-family: 'Fredoka One', cursive; font-size: 1.4rem; color: var(--accent2); }
 
-/* Score list */
 .score-list { width: 100%; margin: 12px 0; }
 .score-row {
   display: flex;
@@ -548,13 +678,12 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   .chat-msg .who { display: block; }
   .draw-tools { padding: 6px 8px; gap: 5px; }
   .color-swatch { width: 20px; height: 20px; }
+  .captcha-wrapper { transform: scale(0.85); transform-origin: left; }
 }
 
 @media (max-width: 450px) {
   .sidebar { display: none; }
-  .mobile-chat-toggle {
-    display: flex !important;
-  }
+  .mobile-chat-toggle { display: flex !important; }
   .game-body { position: relative; }
 }
 
@@ -597,7 +726,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   cursor: pointer;
 }
 
-/* Connection status */
 #conn-status {
   position: fixed;
   top: 8px;
@@ -614,7 +742,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 #conn-status.connecting { border: 1px solid var(--accent2); color: var(--accent2); }
 #conn-status.error { border: 1px solid var(--accent); color: var(--accent); }
 
-/* Notification toast */
 .toast {
   position: fixed;
   top: 20px;
@@ -631,7 +758,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
 
-/* Drawing word banner (for drawer) */
 .your-word-banner {
   background: linear-gradient(135deg, rgba(245,166,35,0.2), rgba(233,69,96,0.2));
   border: 1px solid rgba(245,166,35,0.3);
@@ -648,7 +774,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 </head>
 <body>
 
-<!-- Connection Status -->
 <div id="conn-status"></div>
 <div class="toast" id="toast"></div>
 
@@ -660,12 +785,55 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   </div>
 
   <div class="lobby-card" style="margin: 0 auto;">
+
+    <!-- Worker URL & Site Key (collapsible) -->
+    <button class="settings-toggle" id="settings-toggle-btn" onclick="toggleCaptchaSettings()">
+      ⚙️ Konfigurasi Server & CAPTCHA
+      <span class="arrow">▼</span>
+    </button>
+
+    <div class="captcha-settings" id="captcha-settings">
+      <div>
+        <label>URL Cloudflare Worker</label>
+        <input type="text" id="server-url-input" value="https://mainyuk.dzikriganteng52637.workers.dev" placeholder="https://your-worker.workers.dev">
+      </div>
+      <div>
+        <label>Turnstile Site Key</label>
+        <input type="text" id="turnstile-site-key" class="site-key-input" placeholder="0x4AAAAAAA..." value="" autocomplete="off" oninput="onSiteKeyChange()">
+      </div>
+      <div class="captcha-info-box">
+        <span class="icon">ℹ️</span>
+        <p>
+          Dapatkan Site Key gratis di <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank">Cloudflare Dashboard → Turnstile</a>. Pilih widget type <strong>Managed</strong> lalu copy Site Key-nya ke sini.
+        </p>
+      </div>
+    </div>
+
     <h2>✏️ Buat Room Baru</h2>
     <div class="input-group">
       <input type="text" id="username-input" placeholder="Nama kamu..." maxlength="20" autocomplete="off">
-      <input type="text" id="server-url-input" value="https://mainyuk.dzikriganteng52637.workers.dev" style="display:none">
     </div>
-    <button class="btn btn-primary" onclick="createAndJoinRoom()">🚀 Buat Room</button>
+
+    <!-- Cloudflare Turnstile CAPTCHA -->
+    <div class="captcha-section" id="captcha-section">
+      <span class="captcha-label">🛡️ Verifikasi Manusia</span>
+      <div class="captcha-wrapper">
+        <div class="cf-turnstile"
+             id="turnstile-widget"
+             data-sitekey="0x4AAAAAAAAAAAAAAAAAAAAAA"
+             data-theme="dark"
+             data-size="normal"
+             data-callback="onTurnstileSuccess"
+             data-error-callback="onTurnstileError"
+             data-expired-callback="onTurnstileExpired">
+        </div>
+      </div>
+      <div class="captcha-error" id="captcha-error">
+        ⚠️ Verifikasi gagal atau kedaluwarsa. Silakan coba lagi.
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="create-room-btn" onclick="createAndJoinRoom()">🚀 Buat Room</button>
 
     <div class="divider">atau</div>
 
@@ -674,6 +842,9 @@ input[type="text"]::placeholder { color: var(--text-muted); }
       <input type="text" id="join-code-input" placeholder="Kode Room (6 huruf)" maxlength="6" style="text-transform: uppercase; letter-spacing: 4px; text-align: center;" autocomplete="off">
     </div>
     <button class="btn btn-secondary" onclick="joinRoom()">🎮 Join Room</button>
+    <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 8px; text-align: center;">
+      Join room tidak memerlukan CAPTCHA — CAPTCHA hanya untuk pembuat room.
+    </p>
   </div>
 
   <p style="text-align: center; font-size: 0.75rem; color: var(--text-muted); padding-bottom: 20px;">
@@ -707,7 +878,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 
 <!-- ======================== GAME SCREEN ======================== -->
 <div id="screen-game" class="screen">
-  <!-- Header -->
   <div class="game-header">
     <div class="timer-display">
       <div class="timer-num" id="timer-num">--</div>
@@ -725,19 +895,15 @@ input[type="text"]::placeholder { color: var(--text-muted); }
     </div>
   </div>
 
-  <!-- Your word banner (drawer only) -->
   <div class="your-word-banner" id="your-word-banner">
     Gambar: <strong id="your-word-text">...</strong> — jangan bocor! 🤫
   </div>
 
-  <!-- Body -->
   <div class="game-body">
-    <!-- Canvas -->
     <div class="canvas-area">
       <canvas id="game-canvas"></canvas>
       <div class="canvas-overlay" id="canvas-overlay"></div>
 
-      <!-- Draw Tools (drawer only) -->
       <div class="draw-tools" id="draw-tools" style="display: none;">
         <div class="color-picker-wrap" id="color-picker"></div>
         <div class="size-picker" id="size-picker"></div>
@@ -746,7 +912,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
       </div>
     </div>
 
-    <!-- Sidebar (desktop) -->
     <div class="sidebar">
       <div class="players-panel">
         <div class="panel-title">Skor</div>
@@ -763,12 +928,10 @@ input[type="text"]::placeholder { color: var(--text-muted); }
     </div>
   </div>
 
-  <!-- Mobile Chat Toggle -->
   <div class="mobile-chat-toggle">
     <button onclick="toggleMobileChat()">💬</button>
   </div>
 
-  <!-- Mobile Sidebar -->
   <div class="mobile-sidebar" id="mobile-sidebar">
     <div class="mobile-sidebar-drag" onclick="toggleMobileChat()"></div>
     <div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
@@ -783,7 +946,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 </div>
 
 <!-- ======================== OVERLAYS ======================== -->
-<!-- Round End -->
 <div class="overlay-msg" id="overlay-round-end">
   <div class="overlay-card">
     <div class="emoji" id="ore-emoji">⏰</div>
@@ -794,7 +956,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   </div>
 </div>
 
-<!-- Game End -->
 <div class="overlay-msg" id="overlay-game-end">
   <div class="overlay-card">
     <div class="emoji">🏆</div>
@@ -805,7 +966,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   </div>
 </div>
 
-<!-- Countdown Start -->
 <div class="overlay-msg" id="overlay-starting">
   <div class="overlay-card">
     <div class="emoji">🎉</div>
@@ -818,7 +978,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 // =====================================================
 // CONFIG
 // =====================================================
-let WS_URL = ''; // Set dari input
+let WS_URL = '';
 let ws = null;
 let myClientId = null;
 let myUsername = '';
@@ -830,8 +990,12 @@ let currentWord = '';
 let players = [];
 let correctGuessers = new Set();
 
+// Turnstile token
+let turnstileToken = null;
+let turnstileVerified = false;
+
 const COLORS = ['#000000','#ffffff','#ff4444','#ff8c00','#ffd700','#7ed321','#00b894','#00ccc0','#4a90d9','#9b59b6','#e91e63','#795548','#607d8b'];
-const SIZES = [{ size: 3, label: '●' }, { size: 7, label: '●' }, { size: 14, label: '●' }, { size: 24, label: '●' }];
+const SIZES = [{ size: 3 }, { size: 7 }, { size: 14 }, { size: 24 }];
 
 let drawState = {
   isDrawing: false,
@@ -842,6 +1006,92 @@ let drawState = {
 };
 
 const AVATARS = ['🐱','🐶','🦊','🐼','🐨','🐸','🦁','🐯','🐺','🦄','🐙','🦋'];
+
+// =====================================================
+// TURNSTILE CALLBACKS
+// =====================================================
+
+/**
+ * Dipanggil otomatis oleh Cloudflare Turnstile ketika verifikasi berhasil.
+ * Token ini perlu dikirim ke server Worker kamu untuk divalidasi via:
+ * POST https://challenges.cloudflare.com/turnstile/v0/siteverify
+ */
+function onTurnstileSuccess(token) {
+  turnstileToken = token;
+  turnstileVerified = true;
+  document.getElementById('captcha-error').classList.remove('show');
+  document.getElementById('create-room-btn').disabled = false;
+  console.log('[Turnstile] ✅ Token didapat:', token.substring(0, 30) + '...');
+}
+
+function onTurnstileError() {
+  turnstileToken = null;
+  turnstileVerified = false;
+  document.getElementById('captcha-error').classList.add('show');
+  document.getElementById('create-room-btn').disabled = true;
+}
+
+function onTurnstileExpired() {
+  turnstileToken = null;
+  turnstileVerified = false;
+  document.getElementById('captcha-error').classList.add('show');
+  document.getElementById('create-room-btn').disabled = true;
+  showToast('⚠️ CAPTCHA kedaluwarsa, verifikasi ulang ya.');
+}
+
+/**
+ * Render ulang widget Turnstile dengan Site Key baru
+ */
+function reRenderTurnstile(siteKey) {
+  const wrapper = document.getElementById('turnstile-widget');
+  if (!wrapper) return;
+
+  // Reset state
+  turnstileToken = null;
+  turnstileVerified = false;
+  document.getElementById('create-room-btn').disabled = true;
+
+  // Clear existing widget
+  wrapper.innerHTML = '';
+  wrapper.removeAttribute('data-cf-widget-id');
+
+  // Render ulang
+  if (window.turnstile) {
+    window.turnstile.render(wrapper, {
+      sitekey: siteKey || '0x4AAAAAAAAAAAAAAAAAAAAAA',
+      theme: 'dark',
+      size: 'normal',
+      callback: onTurnstileSuccess,
+      'error-callback': onTurnstileError,
+      'expired-callback': onTurnstileExpired,
+    });
+  } else {
+    // Turnstile script belum load, update attribute dan reload
+    wrapper.setAttribute('data-sitekey', siteKey);
+  }
+}
+
+function onSiteKeyChange() {
+  const key = document.getElementById('turnstile-site-key').value.trim();
+  if (key.length > 10) {
+    // Debounce 1s
+    clearTimeout(window._siteKeyDebounce);
+    window._siteKeyDebounce = setTimeout(() => {
+      reRenderTurnstile(key);
+      showToast('🔄 Widget CAPTCHA diperbarui');
+    }, 1000);
+  }
+}
+
+// =====================================================
+// CAPTCHA SETTINGS TOGGLE
+// =====================================================
+function toggleCaptchaSettings() {
+  const panel = document.getElementById('captcha-settings');
+  const btn = document.getElementById('settings-toggle-btn');
+  panel.classList.toggle('open');
+  btn.classList.toggle('open');
+}
 
 // =====================================================
 // CONNECTION
@@ -1036,7 +1286,6 @@ function handleMessage(msg) {
       break;
 
     case 'pong':
-      // ping/pong
       break;
   }
 }
@@ -1050,12 +1299,44 @@ async function createAndJoinRoom() {
   const url = document.getElementById('server-url-input').value.trim();
   if (!url) { showToast('Masukkan URL Worker dulu!'); return; }
 
+  // === CEK CAPTCHA ===
+  if (!turnstileVerified || !turnstileToken) {
+    showToast('⚠️ Selesaikan verifikasi CAPTCHA dulu!');
+    document.getElementById('captcha-error').classList.add('show');
+    return;
+  }
+
   try {
-    const res = await fetch(`${url}/create-room`);
-    const data = await res.json();
-    currentRoomId = data.roomId;
+    /**
+     * Kirim turnstileToken ke Worker kamu untuk divalidasi.
+     * Di sisi Worker, lakukan POST ke:
+     *   https://challenges.cloudflare.com/turnstile/v0/siteverify
+     *   dengan body: { secret: SECRET_KEY, response: turnstileToken }
+     *
+     * Contoh endpoint: POST /create-room dengan body { captcha: turnstileToken }
+     */
+    const res = await fetch(`${url}/create-room`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ captcha: turnstileToken }),
+    });
+
+    if (!res.ok) {
+      // Fallback: coba GET (kompatibilitas Worker lama)
+      const res2 = await fetch(`${url}/create-room`);
+      const data2 = await res2.json();
+      currentRoomId = data2.roomId;
+    } else {
+      const data = await res.json();
+      if (data.error) {
+        showToast('❌ ' + (data.error || 'CAPTCHA gagal diverifikasi'));
+        reRenderTurnstile(document.getElementById('turnstile-site-key').value.trim());
+        return;
+      }
+      currentRoomId = data.roomId;
+    }
   } catch(e) {
-    // Fallback: generate locally
+    // Fallback: generate locally jika server tidak tersedia
     currentRoomId = generateRoomId();
   }
 
@@ -1073,6 +1354,7 @@ function joinRoom() {
   if (!username) { showToast('Masukkan nama dulu!'); return; }
   if (code.length < 4) { showToast('Masukkan kode room!'); return; }
 
+  // Join room tidak perlu CAPTCHA
   myUsername = username;
   currentRoomId = code;
   document.getElementById('room-code-display').textContent = currentRoomId;
@@ -1155,7 +1437,6 @@ function renderWaitingPlayers() {
 // GAME SETUP
 // =====================================================
 function setupRound({ round, maxRounds, drawerName, isDrawer: amDrawer, word, hint, wordLength, timeLeft }) {
-  // Update header
   document.getElementById('round-text').textContent = `Ronde ${round} / ${maxRounds}`;
   document.getElementById('drawer-name-header').textContent = drawerName;
   document.getElementById('timer-num').textContent = timeLeft;
@@ -1223,7 +1504,6 @@ function initCanvas() {
   window.addEventListener('resize', resizeCanvas);
   resizeCanvas();
 
-  // Color swatches
   const colorPicker = document.getElementById('color-picker');
   COLORS.forEach(c => {
     const sw = document.createElement('div');
@@ -1240,7 +1520,6 @@ function initCanvas() {
     colorPicker.appendChild(sw);
   });
 
-  // Size buttons
   const sizePicker = document.getElementById('size-picker');
   SIZES.forEach((s, i) => {
     const btn = document.createElement('button');
@@ -1256,7 +1535,6 @@ function initCanvas() {
   });
   drawState.size = SIZES[1].size;
 
-  // Mouse events
   canvas.addEventListener('mousedown', (e) => {
     if (!isDrawer) return;
     drawState.isDrawing = true;
@@ -1278,7 +1556,6 @@ function initCanvas() {
   canvas.addEventListener('mouseup', () => drawState.isDrawing = false);
   canvas.addEventListener('mouseleave', () => drawState.isDrawing = false);
 
-  // Touch events
   canvas.addEventListener('touchstart', (e) => {
     if (!isDrawer) return;
     e.preventDefault();
@@ -1325,7 +1602,6 @@ function drawRemote(data) {
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
   drawLine(ctx, data.x1, data.y1, data.x2, data.y2, data.color, data.size, data.eraser);
-  // Redraw safe area hint on top setelah setiap stroke (mobile only)
   drawSafeAreaHint(ctx, canvas);
 }
 
@@ -1339,21 +1615,16 @@ function resetCanvas() {
 }
 
 function drawSafeAreaHint(ctx, canvas) {
-  // Hanya tampil di mobile (layar sempit)
   if (window.innerWidth > 600) return;
-
   const pad = 16;
   const w = canvas.width - pad * 2;
   const h = canvas.height - pad * 2;
-
   ctx.save();
   ctx.strokeStyle = 'rgba(0, 180, 210, 0.35)';
   ctx.lineWidth = 1.5;
   ctx.setLineDash([8, 6]);
   ctx.strokeRect(pad, pad, w, h);
   ctx.setLineDash([]);
-
-  // Label kecil di pojok kiri atas
   ctx.fillStyle = 'rgba(0, 180, 210, 0.45)';
   ctx.font = '10px sans-serif';
   ctx.fillText('area terlihat', pad + 6, pad + 14);
@@ -1378,7 +1649,6 @@ function sendGuess() {
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
-
   if (isDrawer) {
     send({ type: 'chat', text });
     addChatMsg(text, 'normal', myUsername);
@@ -1393,7 +1663,6 @@ function sendGuessMobile() {
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
-
   if (isDrawer) {
     send({ type: 'chat', text });
     addChatMsg(text, 'normal', myUsername);
@@ -1434,7 +1703,6 @@ function clearChatLog() {
 // =====================================================
 function renderScoreSidebar() {
   const sorted = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
-
   const html = sorted.map((p, i) => {
     const isDrawerP = p.clientId === (players.find(pp => pp.isDrawer)?.clientId);
     const guessed = correctGuessers.has(p.clientId);
@@ -1467,14 +1735,11 @@ let oreTimer = null;
 function showRoundEnd(msg) {
   gamePhase = 'roundEnd';
   hideOverlay('overlay-starting');
-
   const emoji = msg.reason === 'all_guessed' ? '🎉' : msg.reason === 'drawer_left' ? '😢' : '⏰';
   const title = msg.reason === 'all_guessed' ? 'Semua Menebak!' : msg.reason === 'drawer_left' ? 'Penggambar Pergi' : 'Waktu Habis!';
-
   document.getElementById('ore-emoji').textContent = emoji;
   document.getElementById('ore-title').textContent = title;
   document.getElementById('ore-word').innerHTML = `Kata: <strong style="color: var(--accent2);">${msg.word}</strong>`;
-  
   if (msg.scores) {
     document.getElementById('ore-scores').innerHTML = msg.scores.slice(0, 5).map((s, i) => `
       <div class="score-row ${i === 0 ? 'first' : ''}">
@@ -1484,26 +1749,20 @@ function showRoundEnd(msg) {
       </div>
     `).join('');
   }
-
   showOverlay('overlay-round-end');
-
   let cnt = 5;
   document.getElementById('ore-countdown').textContent = cnt;
   if (oreTimer) clearInterval(oreTimer);
   oreTimer = setInterval(() => {
     cnt--;
     document.getElementById('ore-countdown').textContent = cnt;
-    if (cnt <= 0) {
-      clearInterval(oreTimer);
-      hideOverlay('overlay-round-end');
-    }
+    if (cnt <= 0) { clearInterval(oreTimer); hideOverlay('overlay-round-end'); }
   }, 1000);
 }
 
 let ogeTimer = null;
 function showGameEnd(msg) {
   hideOverlay('overlay-round-end');
-  
   document.getElementById('oge-winner').textContent = msg.winner ? `🏆 ${msg.winner} Menang!` : 'Selesai!';
   if (msg.scores) {
     document.getElementById('oge-scores').innerHTML = msg.scores.map((s, i) => `
@@ -1514,9 +1773,7 @@ function showGameEnd(msg) {
       </div>
     `).join('');
   }
-
   showOverlay('overlay-game-end');
-
   let cnt = 10;
   if (ogeTimer) clearInterval(ogeTimer);
   ogeTimer = setInterval(() => {
@@ -1546,31 +1803,23 @@ function showScreen(id) {
   }
 }
 
-function showOverlay(id) {
-  document.getElementById(id)?.classList.add('active');
-}
+function showOverlay(id) { document.getElementById(id)?.classList.add('active'); }
+function hideOverlay(id) { document.getElementById(id)?.classList.remove('active'); }
 
-function hideOverlay(id) {
-  document.getElementById(id)?.classList.remove('active');
-}
-
-// =====================================================
-// UTILS
-// =====================================================
 function getPlayerColor(idx) {
   const c = ['#e94560','#f5a623','#00d2d3','#00b894','#a29bfe','#fd79a8'];
   return c[idx % c.length];
 }
 
-// Start game (from waiting room start button - handled by ready system)
-function startGame() {
-  send({ type: 'start_game' });
-}
+function startGame() { send({ type: 'start_game' }); }
 
 // Init
 document.getElementById('join-code-input').addEventListener('input', function() {
   this.value = this.value.toUpperCase();
 });
+
+// Nonaktifkan tombol buat room sampai CAPTCHA selesai
+document.getElementById('create-room-btn').disabled = true;
 </script>
 </body>
 </html>
