@@ -1325,6 +1325,8 @@ function drawRemote(data) {
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
   drawLine(ctx, data.x1, data.y1, data.x2, data.y2, data.color, data.size, data.eraser);
+  // Redraw safe area hint on top setelah setiap stroke (mobile only)
+  drawSafeAreaHint(ctx, canvas);
 }
 
 function resetCanvas() {
@@ -1333,6 +1335,29 @@ function resetCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawSafeAreaHint(ctx, canvas);
+}
+
+function drawSafeAreaHint(ctx, canvas) {
+  // Hanya tampil di mobile (layar sempit)
+  if (window.innerWidth > 600) return;
+
+  const pad = 16;
+  const w = canvas.width - pad * 2;
+  const h = canvas.height - pad * 2;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0, 180, 210, 0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([8, 6]);
+  ctx.strokeRect(pad, pad, w, h);
+  ctx.setLineDash([]);
+
+  // Label kecil di pojok kiri atas
+  ctx.fillStyle = 'rgba(0, 180, 210, 0.45)';
+  ctx.font = '10px sans-serif';
+  ctx.fillText('area terlihat', pad + 6, pad + 14);
+  ctx.restore();
 }
 
 function clearCanvas() {
