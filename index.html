@@ -1204,6 +1204,12 @@ function kickPlayer(targetId) {
   if (!confirm('Kick pemain ini?')) return;
   send({ type: 'kick_player', targetId: targetId });
 }
+
+// Event delegation untuk kick button
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.kick-btn');
+  if (btn && btn.dataset.kickid) kickPlayer(btn.dataset.kickid);
+});
 function copyCode() { if (navigator.clipboard) { navigator.clipboard.writeText(currentRoomId); } showToast('✅ Kode disalin!'); }
 function generateRoomId() { var c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', id = ''; for (var i = 0; i < 6; i++) { id += c[Math.floor(Math.random() * c.length)]; } return id; }
 function toggleReady() {
@@ -1250,7 +1256,7 @@ function renderWaitingPlayers() {
     var p = players[i], avatar = AVATARS[i % AVATARS.length];
     if (p) {
       var isMe = p.clientId === myClientId, isHostPlayer = p.clientId === hostId;
-      var kickBtn = (isHost() && !isMe && gamePhase === 'lobby') ? '<button class="kick-btn" onclick="kickPlayer(' + JSON.stringify(p.clientId) + ')">✕ Kick</button>' : '';
+      var kickBtn = (isHost() && !isMe && gamePhase === 'lobby') ? '<button class="kick-btn" data-kickid="' + p.clientId + '">✕ Kick</button>' : '';
       html += '<div class="player-slot filled ' + (p.isReady ? 'ready' : '') + '"><div class="avatar" style="background:' + PLAYER_COLORS[i % PLAYER_COLORS.length] + '20">' + avatar + '</div><div class="info"><div class="name">' + p.username + (isMe ? ' (kamu)' : '') + (isHostPlayer ? '<span class="host-badge">HOST</span>' : '') + kickBtn + '</div><div class="status ' + (p.isReady ? 'ready' : '') + '">' + (p.isReady ? '✅ Siap' : '⏳ Menunggu') + '</div></div></div>';
     } else {
       html += '<div class="player-slot empty"><div class="avatar" style="background:rgba(255,255,255,0.05)">👤</div><div class="info"><div class="name">' + (i < 3 ? 'Slot wajib...' : 'Opsional') + '</div></div></div>';
