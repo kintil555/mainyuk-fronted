@@ -115,7 +115,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .tool-btn-v:hover { background: rgba(255,255,255,0.2); }
 .tool-btn-v.eraser.active { background: var(--accent2); }
 /* Bottom panel: skor strip + chat */
-.bottom-panel { background: var(--surface); border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; display: flex; flex-direction: column; height: 210px; }
+.bottom-panel { background: var(--surface); border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; display: flex; flex-direction: column; height: 210px; transition: height 0.3s ease; }
 .score-strip { display: flex; gap: 5px; padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.07); overflow-x: auto; flex-shrink: 0; }
 .score-strip::-webkit-scrollbar { height: 2px; }
 .score-chip { display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.06); border-radius: 20px; padding: 3px 9px; white-space: nowrap; font-size: 0.76rem; border: 1px solid transparent; flex-shrink: 0; }
@@ -290,6 +290,35 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 }
 @keyframes glowPulse { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.8);opacity:0.1} }
 
+/* === SIDEBAR TOGGLE === */
+.sidebar-toggle-btn {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 500;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(233,69,96,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+.sidebar-toggle-btn:active { transform: scale(0.93); }
+.sidebar-toggle-btn.chat-open { background: var(--accent3); }
+
+/* Bottom panel hidden state */
+.bottom-panel.hidden {
+  display: none;
+}
+
 /* Fullscreen landscape compact */
 @media (orientation: landscape) and (max-height: 500px) {
   .game-header { padding: 4px 10px; }
@@ -300,6 +329,31 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   .panel-title { margin-bottom: 4px; }
   .player-score-item { padding: 2px 0; font-size: 0.78rem; }
   .chat-msg { font-size: 0.72rem; }
+}
+
+/* === MOBILE: Compact scale & sidebar toggle === */
+@media (max-width: 768px) and (orientation: landscape) {
+  /* Kompak header di mobile landscape */
+  .game-header { padding: 3px 8px; gap: 6px; }
+  .timer-num { font-size: 1.4rem; }
+  .timer-display > div:last-child { display: none; } /* hide "detik" label */
+  .round-text { font-size: 0.68rem; }
+  .drawer-text { font-size: 0.78rem; }
+  .word-display { font-size: clamp(0.75rem, 2vw, 1rem); letter-spacing: 4px; }
+
+  /* Draw tools lebih ramping */
+  .draw-tools { width: 42px; gap: 5px; padding: 6px 4px; }
+  .color-swatch { width: 20px; height: 20px; }
+  .tool-btn-v { width: 28px; height: 28px; font-size: 0.85rem; }
+
+  /* Bottom panel lebih kecil saat tampil */
+  .bottom-panel { height: 180px; }
+  .score-chip { padding: 2px 7px; font-size: 0.7rem; }
+  .chat-msg { font-size: 0.72rem; }
+  .panel-title { font-size: 0.6rem; padding: 2px 8px 1px; }
+
+  /* Tombol toggle muncul di mobile landscape */
+  .sidebar-toggle-btn { display: flex !important; }
 }
 </style>
 </head>
@@ -474,7 +528,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
     </div>
   </div>
   <!-- Bottom panel: skor + chat -->
-  <div class="bottom-panel">
+  <div class="bottom-panel" id="bottom-panel">
     <div class="score-strip" id="score-strip"></div>
     <div class="chat-panel">
       <div class="panel-title">💬 Chat / Jawab</div>
@@ -485,6 +539,8 @@ input[type="text"]::placeholder { color: var(--text-muted); }
       </div>
     </div>
   </div>
+  <!-- Toggle chat sidebar (mobile only) -->
+  <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleChatPanel()" title="Sembunyikan/tampilkan chat">💬</button>
 </div>
 
 <!-- OVERLAYS -->
@@ -1140,6 +1196,33 @@ function showGameEnd(msg) {
 
 // === INIT ===
 document.getElementById('chat-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendGuess(); });
+
+// === CHAT PANEL TOGGLE (mobile) ===
+var chatPanelVisible = true;
+function toggleChatPanel() {
+  var panel = document.getElementById('bottom-panel');
+  var btn = document.getElementById('sidebar-toggle-btn');
+  chatPanelVisible = !chatPanelVisible;
+  if (chatPanelVisible) {
+    panel.classList.remove('hidden');
+    btn.textContent = '💬';
+    btn.classList.add('chat-open');
+    btn.title = 'Sembunyikan chat';
+  } else {
+    panel.classList.add('hidden');
+    btn.textContent = '💬';
+    btn.classList.remove('chat-open');
+    btn.title = 'Tampilkan chat';
+    // Re-init canvas to fill new space
+    setTimeout(function() {
+      if (typeof initCanvas === 'function') { canvasInited = false; initCanvas(); }
+    }, 50);
+  }
+  // Re-init canvas after transition
+  setTimeout(function() {
+    if (typeof initCanvas === 'function') { canvasInited = false; initCanvas(); }
+  }, 320);
+}
 
 // === MOBILE ORIENTATION & FULLSCREEN ===
 var isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
