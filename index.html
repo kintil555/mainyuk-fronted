@@ -82,8 +82,9 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .player-slot .status.ready { color: #00b894; }
 .player-slot.empty .name { color: var(--text-muted); font-style: italic; }
 .waiting-info { text-align: center; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; }
+/* ===================== GAME SCREEN LAYOUT ===================== */
 #screen-game { flex-direction: column; height: 100dvh; overflow: hidden; }
-.game-header { background: var(--surface); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; z-index: 100; }
+.game-header { background: var(--surface); padding: 6px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; z-index: 100; }
 .timer-display { display: flex; flex-direction: column; align-items: center; }
 .timer-num { font-family: 'Fredoka One', cursive; font-size: 1.8rem; line-height: 1; transition: color 0.5s; }
 .timer-num.urgent { color: var(--accent); animation: pulse 0.5s infinite; }
@@ -92,47 +93,103 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .round-text { font-size: 0.75rem; color: var(--text-muted); }
 .drawer-text { font-weight: 700; font-size: 0.85rem; }
 .drawer-text span { color: var(--accent2); }
-.word-display { font-family: 'Fredoka One', cursive; font-size: clamp(1rem, 2.5vw, 1.6rem); letter-spacing: 6px; color: var(--accent3); text-align: center; padding: 6px; }
-.game-body { display: flex; flex: 1; overflow: hidden; }
+.word-display { font-family: 'Fredoka One', cursive; font-size: clamp(0.9rem, 2.5vw, 1.5rem); letter-spacing: 6px; color: var(--accent3); text-align: center; padding: 4px; }
+
+/* game-body: canvas kiri, draw-tools kanan (bukan bawah) */
+.game-body { display: flex; flex: 1; overflow: hidden; flex-direction: row; }
 .canvas-area { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg); position: relative; }
 #game-canvas { display: block; background: white; cursor: crosshair; touch-action: none; flex: 1; width: 100%; }
-.draw-tools { background: var(--surface); padding: 8px 12px; display: flex; align-items: center; gap: 8px; border-top: 1px solid rgba(255,255,255,0.07); flex-wrap: wrap; flex-shrink: 0; }
-.color-picker-wrap { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.color-swatch { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s; flex-shrink: 0; }
+.canvas-overlay { position: absolute; inset: 0; background: transparent; z-index: 5; display: none; }
+
+/* Draw tools — sekarang di KANAN (vertikal) */
+.draw-tools {
+  background: var(--surface); padding: 10px 6px;
+  display: none; flex-direction: column; align-items: center;
+  gap: 8px; border-left: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0; width: 52px; overflow-y: auto;
+}
+.draw-tools.visible { display: flex; }
+.color-picker-wrap { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.color-swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s, border-color 0.15s; flex-shrink: 0; }
 .color-swatch:hover { transform: scale(1.2); }
 .color-swatch.active { border-color: white; transform: scale(1.1); }
-.size-picker { display: flex; align-items: center; gap: 4px; }
+.size-picker { display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .size-btn { background: rgba(255,255,255,0.1); border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
 .size-btn:hover { background: rgba(255,255,255,0.2); }
 .size-btn.active { background: var(--accent3); }
-.tool-btn { background: rgba(255,255,255,0.1); border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; color: var(--text); font-size: 0.85rem; font-family: 'Nunito', sans-serif; font-weight: 700; transition: background 0.15s; white-space: nowrap; }
-.tool-btn:hover { background: rgba(255,255,255,0.2); }
-.tool-btn.eraser.active { background: var(--accent2); color: #1a1a2e; }
-.sidebar { width: 200px; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
-.players-panel { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
-.panel-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 8px; }
-.player-score-item { display: flex; align-items: center; gap: 6px; padding: 5px 0; font-size: 0.82rem; }
-.player-score-item .ava { font-size: 1rem; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.player-score-item .pname { flex: 1; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.player-score-item .pscore { color: var(--accent2); font-weight: 800; font-size: 0.78rem; }
-.player-score-item.drawer { background: rgba(245,166,35,0.1); border-radius: 8px; padding: 5px 6px; }
-.player-score-item.guessed .pname { color: #00b894; text-decoration: line-through; opacity: 0.7; }
+.draw-divider { width: 30px; height: 1px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
+.tool-btn-v { background: rgba(255,255,255,0.1); border: none; border-radius: 8px; padding: 7px 4px; cursor: pointer; color: var(--text); font-size: 1rem; display: flex; align-items: center; justify-content: center; transition: background 0.15s; width: 36px; height: 36px; }
+.tool-btn-v:hover { background: rgba(255,255,255,0.2); }
+.tool-btn-v.eraser.active { background: var(--accent2); }
+
+/* Bottom panel: skor + chat (dulu sidebar) */
+.bottom-panel {
+  background: var(--surface); border-top: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0; display: flex; flex-direction: column;
+  height: 220px;
+}
+.score-strip {
+  display: flex; gap: 6px; padding: 6px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  overflow-x: auto; flex-shrink: 0;
+}
+.score-strip::-webkit-scrollbar { height: 2px; }
+.score-chip {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,0.06); border-radius: 20px;
+  padding: 4px 10px; white-space: nowrap; font-size: 0.78rem;
+  border: 1px solid transparent; flex-shrink: 0;
+}
+.score-chip.guessed { border-color: rgba(0,184,148,0.4); }
+.score-chip .chip-ava { font-size: 0.9rem; }
+.score-chip .chip-name { font-weight: 700; max-width: 70px; overflow: hidden; text-overflow: ellipsis; }
+.score-chip .chip-score { color: var(--accent2); font-weight: 800; }
 .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-#chat-log { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 4px; scroll-behavior: smooth; }
+.panel-title { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); padding: 4px 8px 2px; flex-shrink: 0; }
+#chat-log { flex: 1; overflow-y: auto; padding: 4px 8px; display: flex; flex-direction: column; gap: 3px; scroll-behavior: smooth; }
 #chat-log::-webkit-scrollbar { width: 3px; }
 #chat-log::-webkit-scrollbar-track { background: transparent; }
 #chat-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
-.chat-msg { font-size: 0.78rem; line-height: 1.4; padding: 4px 6px; border-radius: 6px; word-break: break-word; }
-.chat-msg .who { font-weight: 800; margin-right: 4px; }
+.chat-msg { font-size: 0.78rem; line-height: 1.4; padding: 3px 6px; border-radius: 6px; word-break: break-word; display: flex; align-items: center; gap: 4px; }
+.chat-msg .who { font-weight: 800; margin-right: 2px; flex-shrink: 0; }
+.chat-msg .msg-text { flex: 1; }
 .chat-msg.system { color: var(--text-muted); font-style: italic; background: rgba(255,255,255,0.03); }
 .chat-msg.correct { background: rgba(0,184,148,0.15); border-left: 3px solid #00b894; }
 .chat-msg.correct .who { color: #00b894; }
 .chat-msg.wrong .who { color: var(--text-muted); }
-.chat-input-area { padding: 8px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; gap: 6px; flex-shrink: 0; }
-.chat-input-area input { flex: 1; font-size: 0.85rem; padding: 8px 10px; min-width: 0; }
-.chat-input-area button { background: var(--accent); border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; color: white; font-weight: 800; font-size: 0.85rem; font-family: 'Nunito', sans-serif; flex-shrink: 0; transition: opacity 0.2s; }
+.chat-msg.mine { background: rgba(0,210,211,0.07); }
+/* Tombol centang untuk drawer approve jawaban */
+.approve-btn {
+  background: rgba(0,184,148,0.2); border: 1px solid rgba(0,184,148,0.5);
+  border-radius: 6px; padding: 2px 6px; cursor: pointer; color: #00b894;
+  font-size: 0.75rem; font-weight: 800; flex-shrink: 0;
+  transition: background 0.15s; display: none;
+}
+.approve-btn:hover { background: rgba(0,184,148,0.4); }
+.approve-btn.show { display: block; }
+
+/* Chat input area */
+.chat-input-area { padding: 5px 8px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; gap: 5px; flex-shrink: 0; }
+.chat-input-area input { flex: 1; font-size: 0.85rem; padding: 7px 10px; min-width: 0; }
+.chat-input-area button { background: var(--accent); border: none; border-radius: 8px; padding: 7px 12px; cursor: pointer; color: white; font-weight: 800; font-size: 0.85rem; font-family: 'Nunito', sans-serif; flex-shrink: 0; transition: opacity 0.2s; }
 .chat-input-area button:hover { opacity: 0.8; }
-.canvas-overlay { position: absolute; inset: 0; background: transparent; z-index: 5; display: none; }
+
+/* Word input modal untuk drawer — memasukkan kata */
+.word-input-overlay { position: fixed; inset: 0; z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); }
+.word-input-overlay.active { display: flex; }
+.word-input-card { background: var(--card); border-radius: 20px; padding: 32px; text-align: center; max-width: 380px; width: 90%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.word-input-card .emoji { font-size: 3rem; margin-bottom: 10px; }
+.word-input-card h2 { font-family: 'Fredoka One', cursive; font-size: 1.5rem; margin-bottom: 6px; color: var(--accent2); }
+.word-input-card p { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 16px; }
+.word-input-card input { width: 100%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 12px 16px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 1.1rem; font-weight: 700; outline: none; text-align: center; letter-spacing: 2px; margin-bottom: 14px; }
+.word-input-card input:focus { border-color: var(--accent3); }
+.word-input-card .hint-preview { font-family: 'Fredoka One', cursive; font-size: 1.6rem; letter-spacing: 8px; color: var(--accent3); margin-bottom: 16px; min-height: 2rem; }
+
+/* your-word banner */
+.your-word-banner { background: linear-gradient(135deg, rgba(245,166,35,0.2), rgba(233,69,96,0.2)); border: 1px solid rgba(245,166,35,0.3); border-radius: 0; padding: 4px 14px; text-align: center; font-size: 0.8rem; color: var(--text-muted); flex-shrink: 0; display: none; }
+.your-word-banner strong { color: var(--accent2); font-size: 1.1em; }
+
+/* Overlays */
 .overlay-msg { position: fixed; inset: 0; z-index: 200; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); }
 .overlay-msg.active { display: flex; }
 .overlay-card { background: var(--card); border-radius: 20px; padding: 32px; text-align: center; max-width: 380px; width: 90%; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
@@ -147,211 +204,26 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .score-row .rank { font-family: 'Fredoka One', cursive; font-size: 1.2rem; width: 30px; }
 .score-row .sname { flex: 1; font-weight: 700; text-align: left; }
 .score-row .sscore { color: var(--accent2); font-weight: 800; }
-@media (max-width: 600px) {
-  .sidebar { width: 130px; }
-  .player-score-item .ava { display: none; }
-  .draw-tools { padding: 6px 8px; gap: 5px; }
-  .color-swatch { width: 20px; height: 20px; }
-  .captcha-wrapper { transform: scale(0.85); transform-origin: left; }
+
+/* Responsive */
+@media (max-width: 480px) {
+  .draw-tools { width: 44px; }
+  .color-swatch { width: 22px; height: 22px; }
+  .bottom-panel { height: 200px; }
 }
-@media (max-width: 450px) {
-  .sidebar { display: none; }
-  .mobile-chat-toggle { display: flex !important; }
-  .game-body { position: relative; }
-}
-.mobile-chat-toggle { display: none; position: fixed; bottom: 90px; right: 12px; z-index: 50; }
-.mobile-chat-toggle button { background: var(--accent); border: none; border-radius: 50%; width: 48px; height: 48px; font-size: 1.4rem; cursor: pointer; box-shadow: 0 4px 15px rgba(233,69,96,0.5); }
-.mobile-sidebar { position: fixed; bottom: 0; left: 0; right: 0; height: 55vh; background: var(--surface); border-radius: 20px 20px 0 0; z-index: 100; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1); border-top: 1px solid rgba(255,255,255,0.1); }
-.mobile-sidebar.open { transform: translateY(0); }
-.mobile-sidebar-drag { width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px; margin: 8px auto; cursor: pointer; }
 #conn-status { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; z-index: 1000; display: none; }
 #conn-status.show { display: block; }
 #conn-status.connecting { border: 1px solid var(--accent2); color: var(--accent2); }
 #conn-status.error { border: 1px solid var(--accent); color: var(--accent); }
 .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-60px); background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 20px; font-weight: 700; z-index: 1000; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); white-space: nowrap; }
 .toast.show { transform: translateX(-50%) translateY(0); }
-.your-word-banner { background: linear-gradient(135deg, rgba(245,166,35,0.2), rgba(233,69,96,0.2)); border: 1px solid rgba(245,166,35,0.3); border-radius: 10px; padding: 6px 14px; text-align: center; font-size: 0.8rem; color: var(--text-muted); flex-shrink: 0; display: none; }
-.your-word-banner strong { color: var(--accent2); font-size: 1.1em; }
-
-/* === QUEUE OVERLAY === */
-#queue-overlay {
-  display: none; position: fixed; inset: 0; z-index: 9998;
-  background: rgba(10, 10, 20, 0.96);
-  flex-direction: column; align-items: center; justify-content: center;
-  gap: 24px; padding: 30px; text-align: center;
-  backdrop-filter: blur(8px);
-}
-#queue-overlay.show { display: flex; }
-.queue-card {
-  background: var(--card); border-radius: 24px; padding: 36px 32px;
-  width: 100%; max-width: 420px;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-}
-.queue-title {
-  font-family: 'Fredoka One', cursive; font-size: 1.8rem;
-  color: var(--accent2); margin-bottom: 6px;
-}
-.queue-sub { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px; }
-.queue-position-wrap {
-  position: relative; display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 20px; width: 120px; height: 120px;
-}
-.queue-ring {
-  position: absolute; inset: 0; border-radius: 50%;
-  border: 4px solid rgba(255,255,255,0.08);
-}
-.queue-ring-fill {
-  position: absolute; inset: 0; border-radius: 50%;
-  border: 4px solid var(--accent2);
-  border-right-color: transparent; border-bottom-color: transparent;
-  animation: spin 2s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.queue-pos-num {
-  font-family: 'Fredoka One', cursive; font-size: 3rem;
-  color: var(--accent2); line-height: 1;
-}
-.queue-pos-label { font-size: 0.7rem; color: var(--text-muted); letter-spacing: 1px; }
-.queue-info-row {
-  display: flex; justify-content: space-between; align-items: center;
-  background: rgba(255,255,255,0.05); border-radius: 12px;
-  padding: 12px 16px; margin-bottom: 10px;
-}
-.queue-info-label { font-size: 0.82rem; color: var(--text-muted); }
-.queue-info-val { font-weight: 800; font-size: 0.95rem; color: var(--text); }
-.queue-timer-bar-wrap {
-  background: rgba(255,255,255,0.08); border-radius: 8px;
-  height: 8px; overflow: hidden; margin: 16px 0 8px;
-}
-.queue-timer-bar {
-  height: 100%; border-radius: 8px;
-  background: linear-gradient(90deg, var(--accent2), var(--accent3));
-  transition: width 1s linear;
-}
-.queue-progress-label { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px; }
-.queue-cancel-btn {
-  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px; padding: 10px 20px; color: var(--text-muted);
-  font-family: 'Nunito',sans-serif; font-weight: 700; font-size: 0.85rem;
-  cursor: pointer; transition: background 0.2s;
-}
-.queue-cancel-btn:hover { background: rgba(255,255,255,0.12); color: var(--text); }
-.queue-dots span {
-  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-  background: var(--accent2); margin: 0 3px;
-  animation: dotBounce 1.2s ease-in-out infinite;
-}
-.queue-dots span:nth-child(2) { animation-delay: 0.2s; }
-.queue-dots span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes dotBounce { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
-
-/* === ROTATE OVERLAY === */
-#rotate-overlay {
-  display: none;
-  position: fixed; inset: 0; z-index: 9999;
-  background: var(--bg);
-  flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 20px;
-  text-align: center;
-  padding: 30px;
-}
-#rotate-overlay.show { display: flex; }
-.rotate-phone-icon {
-  font-size: 5rem;
-  animation: rotateAnim 1.8s ease-in-out infinite;
-}
-@keyframes rotateAnim {
-  0%   { transform: rotate(0deg); }
-  35%  { transform: rotate(-90deg); }
-  65%  { transform: rotate(-90deg); }
-  100% { transform: rotate(0deg); }
-}
-.rotate-title {
-  font-family: 'Fredoka One', cursive;
-  font-size: 1.8rem;
-  background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
-.rotate-sub { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; }
-.rotate-glow {
-  width: 80px; height: 80px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(0,210,211,0.3), transparent 70%);
-  position: absolute; animation: glowPulse 1.8s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes glowPulse { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.8);opacity:0.1} }
-
-/* Fullscreen landscape compact */
-@media (orientation: landscape) and (max-height: 500px) {
-  .game-header { padding: 4px 10px; }
-  .timer-num { font-size: 1.4rem; }
-  .draw-tools { padding: 4px 8px; gap: 5px; }
-  .color-swatch { width: 18px; height: 18px; }
-  .sidebar { width: 155px; }
-  .panel-title { margin-bottom: 4px; }
-  .player-score-item { padding: 2px 0; font-size: 0.78rem; }
-  .chat-msg { font-size: 0.72rem; }
-}
+.captcha-wrapper { transform: scale(0.85); transform-origin: left; }
 </style>
 </head>
 <body>
 
 <div id="conn-status"></div>
 <div class="toast" id="toast"></div>
-
-<!-- ROTATE OVERLAY (mobile portrait) -->
-<div id="rotate-overlay">
-  <div class="rotate-glow"></div>
-  <div class="rotate-phone-icon">📱</div>
-  <div class="rotate-title">Putar HP-mu!</div>
-  <div class="rotate-sub">
-    Miringkan HP ke posisi <strong style="color:var(--accent3)">landscape</strong><br>
-    untuk pengalaman bermain terbaik 🎨
-  </div>
-  <div style="color:var(--text-muted);font-size:0.8rem;margin-top:8px;">
-    Layar akan otomatis penuh setelah diputar
-  </div>
-</div>
-
-<!-- QUEUE OVERLAY -->
-<div id="queue-overlay">
-  <div class="queue-card">
-    <div class="queue-title">⏳ Sedang Antri</div>
-    <div class="queue-sub">Server lagi rame! Tenang, giliranmu akan tiba 😊</div>
-
-    <div class="queue-position-wrap">
-      <div class="queue-ring"></div>
-      <div class="queue-ring-fill"></div>
-      <div>
-        <div class="queue-pos-num" id="queue-pos-num">-</div>
-        <div class="queue-pos-label">ANTRIAN</div>
-      </div>
-    </div>
-
-    <div class="queue-info-row">
-      <span class="queue-info-label">⏱ Estimasi tunggu</span>
-      <span class="queue-info-val" id="queue-wait-text">-</span>
-    </div>
-    <div class="queue-info-row">
-      <span class="queue-info-label">👥 Orang di depanmu</span>
-      <span class="queue-info-val" id="queue-ahead-num">-</span>
-    </div>
-
-    <div class="queue-timer-bar-wrap">
-      <div class="queue-timer-bar" id="queue-bar" style="width:0%"></div>
-    </div>
-    <div class="queue-progress-label" id="queue-bar-label">Menunggu giliran...</div>
-
-    <div class="queue-dots" style="margin-bottom:16px">
-      <span></span><span></span><span></span>
-    </div>
-
-    <button class="queue-cancel-btn" onclick="cancelQueue()">✕ Batalkan Antrian</button>
-  </div>
-</div>
 
 <!-- LOBBY -->
 <div id="screen-lobby" class="screen active">
@@ -421,62 +293,66 @@ input[type="text"]::placeholder { color: var(--text-muted); }
   </div>
 </div>
 
+<!-- WORD INPUT OVERLAY (untuk drawer saat ronde mulai) -->
+<div class="word-input-overlay" id="word-input-overlay">
+  <div class="word-input-card">
+    <div class="emoji">✏️</div>
+    <h2>Kamu yang Gambar!</h2>
+    <p>Ketik nama objek yang akan kamu gambar.<br>Peserta hanya lihat <strong style="color:var(--accent3)">huruf kedua</strong> saja.</p>
+    <input type="text" id="word-input-field" placeholder="misal: kucing, mobil..." maxlength="30" autocomplete="off">
+    <div class="hint-preview" id="word-hint-preview">_ _ _ _</div>
+    <button class="btn btn-primary" onclick="submitWord()" id="word-submit-btn">🎨 Mulai Menggambar!</button>
+  </div>
+</div>
+
 <!-- GAME SCREEN -->
 <div id="screen-game" class="screen">
   <div class="game-header">
     <div class="timer-display">
       <div class="timer-num" id="timer-num">--</div>
-      <div style="font-size: 0.6rem; color: var(--text-muted);">detik</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);">detik</div>
     </div>
     <div class="round-info">
       <div class="round-text" id="round-text">Ronde 1</div>
       <div class="drawer-text">Yang gambar: <span id="drawer-name-header">-</span></div>
     </div>
-    <div style="text-align: center; min-width: 80px;">
+    <div style="text-align:center;min-width:80px;">
       <div class="word-display" id="word-hint-display">_ _ _ _</div>
-      <div id="word-length-info" style="font-size: 0.65rem; color: var(--text-muted);"></div>
+      <div id="word-length-info" style="font-size:0.65rem;color:var(--text-muted);"></div>
     </div>
   </div>
+
   <div class="your-word-banner" id="your-word-banner">
     Gambar: <strong id="your-word-text">...</strong> — jangan bocor! 🤫
   </div>
+
   <div class="game-body">
+    <!-- Canvas -->
     <div class="canvas-area">
       <canvas id="game-canvas"></canvas>
       <div class="canvas-overlay" id="canvas-overlay"></div>
-      <div class="draw-tools" id="draw-tools" style="display: none;">
-        <div class="color-picker-wrap" id="color-picker"></div>
-        <div class="size-picker" id="size-picker"></div>
-        <button class="tool-btn eraser" id="eraser-btn" onclick="toggleEraser()">🧹 Hapus</button>
-        <button class="tool-btn" onclick="clearCanvas()" style="margin-left: auto;">🗑️ Bersihkan</button>
-      </div>
     </div>
-    <div class="sidebar">
-      <div class="players-panel">
-        <div class="panel-title">Skor</div>
-        <div id="score-list-sidebar"></div>
-      </div>
-      <div class="chat-panel">
-        <div class="panel-title" style="padding: 8px 8px 0;">Chat / Jawab</div>
-        <div id="chat-log"></div>
-        <div class="chat-input-area">
-          <input type="text" id="chat-input" placeholder="Tebak..." autocomplete="off">
-          <button onclick="sendGuess()">➤</button>
-        </div>
-      </div>
+
+    <!-- Draw Tools (kanan, vertikal) -->
+    <div class="draw-tools" id="draw-tools">
+      <div class="color-picker-wrap" id="color-picker"></div>
+      <div class="draw-divider"></div>
+      <div class="size-picker" id="size-picker"></div>
+      <div class="draw-divider"></div>
+      <button class="tool-btn-v eraser" id="eraser-btn" onclick="toggleEraser()" title="Hapus">🧹</button>
+      <button class="tool-btn-v" onclick="clearCanvas()" title="Bersihkan">🗑️</button>
     </div>
   </div>
-  <div class="mobile-chat-toggle">
-    <button onclick="toggleMobileChat()">💬</button>
-  </div>
-  <div class="mobile-sidebar" id="mobile-sidebar">
-    <div class="mobile-sidebar-drag" onclick="toggleMobileChat()"></div>
-    <div style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
-      <div id="score-list-mobile" style="padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 0.8rem;"></div>
-      <div id="chat-log-mobile" style="flex:1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 4px;"></div>
+
+  <!-- Bottom Panel: Skor + Chat -->
+  <div class="bottom-panel">
+    <div class="score-strip" id="score-strip"></div>
+    <div class="chat-panel">
+      <div class="panel-title">💬 Chat / Jawab</div>
+      <div id="chat-log"></div>
       <div class="chat-input-area">
-        <input type="text" id="chat-input-mobile" placeholder="Tebak..." autocomplete="off">
-        <button onclick="sendGuessMobile()">➤</button>
+        <input type="text" id="chat-input" placeholder="Ketik tebakanmu..." autocomplete="off">
+        <button onclick="sendGuess()">➤</button>
       </div>
     </div>
   </div>
@@ -525,6 +401,7 @@ let players = [];
 let correctGuessers = new Set();
 let turnstileToken = null;
 let turnstileVerified = false;
+let currentWord = ''; // kata yang drawer masukkan
 
 const COLORS = ['#000000','#ffffff','#ff4444','#ff8c00','#ffd700','#7ed321','#00b894','#00ccc0','#4a90d9','#9b59b6','#e91e63','#795548','#607d8b'];
 const SIZES = [3, 7, 14, 24];
@@ -535,20 +412,17 @@ let drawState = { isDrawing: false, color: '#000000', size: 7, isEraser: false, 
 
 // === TURNSTILE ===
 function onTurnstileSuccess(token) {
-  turnstileToken = token;
-  turnstileVerified = true;
+  turnstileToken = token; turnstileVerified = true;
   document.getElementById('captcha-error').classList.remove('show');
   document.getElementById('create-room-btn').disabled = false;
 }
 function onTurnstileError() {
-  turnstileToken = null;
-  turnstileVerified = false;
+  turnstileToken = null; turnstileVerified = false;
   document.getElementById('captcha-error').classList.add('show');
   document.getElementById('create-room-btn').disabled = true;
 }
 function onTurnstileExpired() {
-  turnstileToken = null;
-  turnstileVerified = false;
+  turnstileToken = null; turnstileVerified = false;
   document.getElementById('captcha-error').classList.add('show');
   document.getElementById('create-room-btn').disabled = true;
   showToast('⚠️ CAPTCHA kedaluwarsa, verifikasi ulang ya.');
@@ -611,7 +485,7 @@ function handleMessage(msg) {
   } else if (msg.type === 'player_joined' || msg.type === 'player_left' || msg.type === 'player_ready') {
     players = msg.players || [];
     renderWaitingPlayers();
-    if (gamePhase === 'drawing') { renderScoreSidebar(); }
+    if (gamePhase === 'drawing') { renderScoreStrip(); }
   } else if (msg.type === 'game_starting') {
     gamePhase = 'starting';
     showOverlay('overlay-starting');
@@ -628,15 +502,17 @@ function handleMessage(msg) {
       }
     }, 1000);
   } else if (msg.type === 'round_start_drawer') {
+    // Drawer: tampilkan modal input kata
     isDrawer = true;
     gamePhase = 'drawing';
     correctGuessers.clear();
-    setupRound({ round: msg.round, maxRounds: msg.maxRounds, drawerName: msg.drawerName, amDrawer: true, word: msg.word, timeLeft: msg.timeLeft });
+    setupRoundUI({ round: msg.round, maxRounds: msg.maxRounds, drawerName: msg.drawerName, amDrawer: true, timeLeft: msg.timeLeft });
+    showWordInputModal();
   } else if (msg.type === 'round_start_guesser') {
     isDrawer = false;
     gamePhase = 'drawing';
     correctGuessers.clear();
-    setupRound({ round: msg.round, maxRounds: msg.maxRounds, drawerName: msg.drawerName, amDrawer: false, hint: msg.hint, wordLength: msg.wordLength, timeLeft: msg.timeLeft });
+    setupRoundUI({ round: msg.round, maxRounds: msg.maxRounds, drawerName: msg.drawerName, amDrawer: false, hint: msg.hint, wordLength: msg.wordLength, timeLeft: msg.timeLeft });
   } else if (msg.type === 'draw') {
     if (!isDrawer) { drawRemote(msg.data); }
   } else if (msg.type === 'clear_canvas') {
@@ -647,13 +523,18 @@ function handleMessage(msg) {
     updateTimer(msg.timeLeft);
   } else if (msg.type === 'correct_guess') {
     correctGuessers.add(msg.clientId);
-    addChatMsg('✅ ' + msg.username + ' menebak dengan benar! +' + msg.points, 'correct', '');
+    addChatMsg('✅ ' + msg.username + ' menebak dengan benar! +' + msg.points, 'correct', '', null);
     if (msg.scores) { updateScores(msg.scores); }
+    renderScoreStrip();
   } else if (msg.type === 'wrong_guess') {
-    if (msg.clientId !== myClientId) { addChatMsg(msg.text, 'wrong', msg.username); }
+    // Tampilkan di chat — kalau drawer, tampilkan tombol centang
+    if (msg.clientId !== myClientId) {
+      addChatMsg(msg.text, 'wrong', msg.username, isDrawer ? msg.clientId : null);
+    }
   } else if (msg.type === 'chat') {
-    addChatMsg(msg.text, 'normal', msg.username);
+    addChatMsg(msg.text, 'normal', msg.username, null);
   } else if (msg.type === 'round_end') {
+    hideWordInputModal();
     showRoundEnd(msg);
   } else if (msg.type === 'game_end') {
     showGameEnd(msg);
@@ -665,19 +546,13 @@ function handleMessage(msg) {
     showScreen('screen-waiting');
     renderWaitingPlayers();
   } else if (msg.type === 'game_cancelled') {
-    addChatMsg('⚠️ ' + msg.reason, 'system', '');
+    addChatMsg('⚠️ ' + msg.reason, 'system', '', null);
     gamePhase = 'lobby';
     showScreen('screen-waiting');
   } else if (msg.type === 'error') {
     showToast('⚠️ ' + msg.message);
   }
 }
-
-// === QUEUE STATE ===
-var queueId = null;
-var queuePollInterval = null;
-var queueStartWait = 0;
-var queueInitialWait = 0;
 
 // === LOBBY ===
 async function createAndJoinRoom() {
@@ -688,136 +563,25 @@ async function createAndJoinRoom() {
     document.getElementById('captcha-error').classList.add('show');
     return;
   }
-  document.getElementById('create-room-btn').disabled = true;
-  document.getElementById('create-room-btn').textContent = '⏳ Memproses...';
-  await attemptCreateRoom(username, turnstileToken, null);
-}
-
-async function attemptCreateRoom(username, captchaToken, existingQueueId) {
   try {
     var res = await fetch(SERVER_URL + '/create-room', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ captcha: captchaToken, queueId: existingQueueId }),
+      body: JSON.stringify({ captcha: turnstileToken }),
     });
     var data = await res.json();
-
-    if (res.status === 202 && data.queued) {
-      // Masuk antrian
-      queueId = data.queueId;
-      queueInitialWait = data.estimatedWait;
-      queueStartWait = Date.now();
-      showQueueOverlay(data.position, data.estimatedWait);
-      startQueuePolling(username, captchaToken);
-      return;
-    }
-
     if (data.error) {
       showToast('❌ ' + data.error);
-      resetCreateBtn();
       turnstileToken = null; turnstileVerified = false;
+      document.getElementById('create-room-btn').disabled = true;
       if (window.turnstile) { window.turnstile.reset('#turnstile-widget'); }
       return;
     }
-
-    // Berhasil dapat room
-    hideQueueOverlay();
-    stopQueuePolling();
     currentRoomId = data.roomId;
-    myUsername = username;
-    document.getElementById('room-code-display').textContent = currentRoomId;
-    resetCreateBtn();
-    if (connectWS(currentRoomId, username)) { showScreen('screen-waiting'); }
-
-  } catch(e) {
-    // Fallback jika server error
-    hideQueueOverlay();
-    stopQueuePolling();
-    currentRoomId = generateRoomId();
-    myUsername = username;
-    document.getElementById('room-code-display').textContent = currentRoomId;
-    resetCreateBtn();
-    if (connectWS(currentRoomId, username)) { showScreen('screen-waiting'); }
-  }
-}
-
-function resetCreateBtn() {
-  var btn = document.getElementById('create-room-btn');
-  btn.disabled = false;
-  btn.textContent = '🚀 Buat Room';
-}
-
-function startQueuePolling(username, captchaToken) {
-  stopQueuePolling();
-  queuePollInterval = setInterval(async function() {
-    try {
-      var res = await fetch(SERVER_URL + '/queue-status?queueId=' + queueId);
-      var data = await res.json();
-
-      if (data.status === 'ready') {
-        // Giliran tiba! Buat room sekarang
-        stopQueuePolling();
-        updateQueueUI(1, 0);
-        document.getElementById('queue-bar-label').textContent = '🎉 Giliranmu! Membuat room...';
-        setTimeout(async function() {
-          await attemptCreateRoom(username, captchaToken, queueId);
-        }, 500);
-      } else if (data.status === 'queued') {
-        updateQueueUI(data.position, data.estimatedWait);
-      } else if (data.status === 'not_found') {
-        // Queue expired, coba lagi dari awal
-        stopQueuePolling();
-        hideQueueOverlay();
-        resetCreateBtn();
-        showToast('⚠️ Antrian kedaluwarsa, silakan coba lagi.');
-      }
-    } catch(e) {
-      // Network error, tetap polling
-    }
-  }, 3000); // Poll setiap 3 detik
-}
-
-function stopQueuePolling() {
-  if (queuePollInterval) { clearInterval(queuePollInterval); queuePollInterval = null; }
-}
-
-function showQueueOverlay(position, estimatedWait) {
-  document.getElementById('queue-overlay').classList.add('show');
-  updateQueueUI(position, estimatedWait);
-}
-
-function hideQueueOverlay() {
-  document.getElementById('queue-overlay').classList.remove('show');
-}
-
-function updateQueueUI(position, estimatedWait) {
-  document.getElementById('queue-pos-num').textContent = position;
-  document.getElementById('queue-ahead-num').textContent = Math.max(0, position - 1) + ' orang';
-
-  // Format waktu
-  var mins = Math.floor(estimatedWait / 60);
-  var secs = estimatedWait % 60;
-  var timeText = mins > 0 ? mins + ' menit ' + (secs > 0 ? secs + ' detik' : '') : secs + ' detik';
-  document.getElementById('queue-wait-text').textContent = estimatedWait > 0 ? '~' + timeText : 'Sebentar lagi!';
-
-  // Progress bar (berdasarkan waktu berlalu vs estimasi awal)
-  var elapsed = (Date.now() - queueStartWait) / 1000;
-  var pct = queueInitialWait > 0 ? Math.min(95, (elapsed / queueInitialWait) * 100) : 0;
-  document.getElementById('queue-bar').style.width = pct + '%';
-
-  if (position <= 1) {
-    document.getElementById('queue-bar-label').textContent = '🔥 Hampir giliran kamu!';
-  } else {
-    document.getElementById('queue-bar-label').textContent = 'Masih ada ' + (position - 1) + ' orang di depanmu';
-  }
-}
-
-function cancelQueue() {
-  stopQueuePolling();
-  hideQueueOverlay();
-  queueId = null;
-  resetCreateBtn();
-  showToast('Antrian dibatalkan.');
+  } catch(e) { currentRoomId = generateRoomId(); }
+  myUsername = username;
+  document.getElementById('room-code-display').textContent = currentRoomId;
+  if (connectWS(currentRoomId, username)) { showScreen('screen-waiting'); }
 }
 
 function joinRoom() {
@@ -866,59 +630,101 @@ function renderWaitingPlayers() {
         '<div class="info"><div class="name">' + p.username + (isMe ? ' (kamu)' : '') + '</div>' +
         '<div class="status ' + (p.isReady ? 'ready' : '') + '">' + (p.isReady ? '✅ Siap' : '⏳ Menunggu') + '</div></div></div>';
     } else {
-      html += '<div class="player-slot empty">' +
-        '<div class="avatar" style="background:rgba(255,255,255,0.05)">👤</div>' +
+      html += '<div class="player-slot empty"><div class="avatar" style="background:rgba(255,255,255,0.05)">👤</div>' +
         '<div class="info"><div class="name">' + (i < 3 ? 'Slot wajib...' : 'Opsional') + '</div></div></div>';
     }
   }
   container.innerHTML = html;
   var readyCount = players.filter(function(p) { return p.isReady; }).length;
   var info = document.getElementById('waiting-info');
-  if (players.length < 3) {
-    info.textContent = 'Butuh ' + (3 - players.length) + ' pemain lagi untuk mulai';
-  } else if (readyCount < players.length) {
-    info.textContent = readyCount + '/' + players.length + ' pemain siap';
-  } else {
-    info.textContent = 'Semua siap! Memulai...';
-  }
+  if (players.length < 3) { info.textContent = 'Butuh ' + (3 - players.length) + ' pemain lagi untuk mulai'; }
+  else if (readyCount < players.length) { info.textContent = readyCount + '/' + players.length + ' pemain siap'; }
+  else { info.textContent = 'Semua siap! Memulai...'; }
 }
 
-// === GAME ===
-function setupRound(opts) {
+// === WORD INPUT MODAL (drawer) ===
+function showWordInputModal() {
+  currentWord = '';
+  var field = document.getElementById('word-input-field');
+  field.value = '';
+  document.getElementById('word-hint-preview').textContent = '_ _ _ _';
+  document.getElementById('word-input-overlay').classList.add('active');
+  setTimeout(function() { field.focus(); }, 300);
+}
+
+function hideWordInputModal() {
+  document.getElementById('word-input-overlay').classList.remove('active');
+}
+
+// Preview hint (hanya huruf ke-2 yang kelihatan)
+document.addEventListener('DOMContentLoaded', function() {
+  var field = document.getElementById('word-input-field');
+  if (field) {
+    field.addEventListener('input', function() {
+      var val = field.value.trim();
+      var preview = buildHintFromWord(val);
+      document.getElementById('word-hint-preview').textContent = preview;
+    });
+    field.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { submitWord(); }
+    });
+  }
+  document.getElementById('chat-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') { sendGuess(); } });
+  document.getElementById('join-code-input').addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+});
+
+// Buat hint: hanya huruf index ke-1 (kedua) yang kelihatan per kata
+function buildHintFromWord(word) {
+  if (!word) return '_ _ _ _';
+  return word.split('').map(function(c, i) {
+    if (c === ' ') return ' ';
+    if (i === 1) return c; // huruf kedua kelihatan
+    return '_';
+  }).join(' ').trim();
+}
+
+function submitWord() {
+  var val = document.getElementById('word-input-field').value.trim();
+  if (!val || val.length < 2) { showToast('Kata minimal 2 huruf!'); return; }
+  currentWord = val.toLowerCase();
+  hideWordInputModal();
+  // Kirim kata ke server
+  send({ type: 'set_word', word: currentWord });
+  // Setup UI drawer
+  var hint = buildHintFromWord(currentWord);
+  document.getElementById('word-hint-display').textContent = hint;
+  document.getElementById('your-word-text').textContent = currentWord;
+  document.getElementById('your-word-banner').style.display = 'block';
+  document.getElementById('draw-tools').classList.add('visible');
+  document.getElementById('canvas-overlay').style.display = 'none';
+  document.getElementById('chat-input').placeholder = 'Chat ke peserta...';
+  document.getElementById('chat-input').disabled = false;
+  renderScoreStrip();
+  clearChatLog();
+  addChatMsg('🎨 Kamu sedang menggambar — semangat!', 'system', '', null);
+}
+
+// === GAME ROUND UI ===
+function setupRoundUI(opts) {
   document.getElementById('round-text').textContent = 'Ronde ' + opts.round + ' / ' + opts.maxRounds;
   document.getElementById('drawer-name-header').textContent = opts.drawerName;
   document.getElementById('timer-num').textContent = opts.timeLeft;
   resetCanvas();
-  var banner = document.getElementById('your-word-banner');
-  var drawTools = document.getElementById('draw-tools');
-  var overlay = document.getElementById('canvas-overlay');
-  var chatInput = document.getElementById('chat-input');
-  var chatInputM = document.getElementById('chat-input-mobile');
-  if (opts.amDrawer) {
-    document.getElementById('word-hint-display').textContent = opts.word.replace(/\S/g, '▮');
-    document.getElementById('word-length-info').textContent = '';
-    document.getElementById('your-word-text').textContent = opts.word;
-    banner.style.display = 'block';
-    drawTools.style.display = 'flex';
-    overlay.style.display = 'none';
-    chatInput.placeholder = 'Chat (kamu yang gambar!)';
-    chatInput.disabled = true;
-    chatInputM.placeholder = 'Kamu yang gambar!';
-    chatInputM.disabled = true;
-  } else {
-    document.getElementById('word-hint-display').textContent = formatHint(opts.hint || '_'.repeat(opts.wordLength || 4));
+  if (!opts.amDrawer) {
+    // Guesser
+    var hint = opts.hint || '_'.repeat(opts.wordLength || 4);
+    document.getElementById('word-hint-display').textContent = formatHint(hint);
     document.getElementById('word-length-info').textContent = opts.wordLength + ' huruf';
-    banner.style.display = 'none';
-    drawTools.style.display = 'none';
-    overlay.style.display = 'block';
-    chatInput.placeholder = 'Ketik tebakanmu...';
-    chatInput.disabled = false;
-    chatInputM.placeholder = 'Ketik tebakanmu...';
-    chatInputM.disabled = false;
+    document.getElementById('your-word-banner').style.display = 'none';
+    document.getElementById('draw-tools').classList.remove('visible');
+    document.getElementById('canvas-overlay').style.display = 'block';
+    document.getElementById('chat-input').placeholder = 'Ketik tebakanmu...';
+    document.getElementById('chat-input').disabled = false;
+    renderScoreStrip();
+    clearChatLog();
+    addChatMsg('🎨 ' + opts.drawerName + ' sedang menggambar sesuatu...', 'system', '', null);
   }
-  renderScoreSidebar();
-  clearChatLog();
-  addChatMsg('🎨 ' + opts.drawerName + ' sedang menggambar sesuatu...', 'system', '');
+  // Drawer setup dilanjutkan di submitWord() setelah modal
 }
 
 function formatHint(hint) {
@@ -936,14 +742,13 @@ var canvasInited = false;
 function initCanvas() {
   var canvas = document.getElementById('game-canvas');
   var ctx = canvas.getContext('2d');
-
   function resize() {
     var area = canvas.parentElement;
     var headerH = document.querySelector('.game-header').offsetHeight || 0;
-    var toolsH = document.getElementById('draw-tools').offsetHeight || 0;
     var bannerH = document.getElementById('your-word-banner').offsetHeight || 0;
+    var bottomH = document.querySelector('.bottom-panel').offsetHeight || 0;
     canvas.width = area.clientWidth;
-    canvas.height = window.innerHeight - headerH - toolsH - bannerH;
+    canvas.height = window.innerHeight - headerH - bannerH - bottomH;
     resetCanvas();
   }
   if (!canvasInited) {
@@ -957,8 +762,7 @@ function initCanvas() {
       sw.style.background = c;
       if (c === '#ffffff') { sw.style.border = '2px solid rgba(255,255,255,0.3)'; }
       sw.onclick = function() {
-        drawState.color = c;
-        drawState.isEraser = false;
+        drawState.color = c; drawState.isEraser = false;
         document.getElementById('eraser-btn').classList.remove('active');
         document.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('active'); });
         sw.classList.add('active');
@@ -979,15 +783,15 @@ function initCanvas() {
       };
       sp.appendChild(btn);
     });
-    // Events
+    // Mouse events
     canvas.addEventListener('mousedown', function(e) {
-      if (!isDrawer) { return; }
+      if (!isDrawer) return;
       drawState.isDrawing = true;
       var pos = getPos(e, canvas);
       drawState.lastX = pos.x; drawState.lastY = pos.y;
     });
     canvas.addEventListener('mousemove', function(e) {
-      if (!drawState.isDrawing || !isDrawer) { return; }
+      if (!drawState.isDrawing || !isDrawer) return;
       var pos = getPos(e, canvas);
       drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y);
       send({ type: 'draw', data: { x1: drawState.lastX, y1: drawState.lastY, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, eraser: drawState.isEraser } });
@@ -995,15 +799,15 @@ function initCanvas() {
     });
     canvas.addEventListener('mouseup', function() { drawState.isDrawing = false; });
     canvas.addEventListener('mouseleave', function() { drawState.isDrawing = false; });
+    // Touch events
     canvas.addEventListener('touchstart', function(e) {
-      if (!isDrawer) { return; }
-      e.preventDefault();
-      drawState.isDrawing = true;
+      if (!isDrawer) return;
+      e.preventDefault(); drawState.isDrawing = true;
       var pos = getPos(e.touches[0], canvas);
       drawState.lastX = pos.x; drawState.lastY = pos.y;
     }, { passive: false });
     canvas.addEventListener('touchmove', function(e) {
-      if (!drawState.isDrawing || !isDrawer) { return; }
+      if (!drawState.isDrawing || !isDrawer) return;
       e.preventDefault();
       var pos = getPos(e.touches[0], canvas);
       drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y);
@@ -1018,16 +822,12 @@ function initCanvas() {
 
 function getPos(e, canvas) {
   var rect = canvas.getBoundingClientRect();
-  return {
-    x: (e.clientX - rect.left) * (canvas.width / rect.width),
-    y: (e.clientY - rect.top) * (canvas.height / rect.height)
-  };
+  return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) };
 }
 function drawLine(ctx, x1, y1, x2, y2) {
   ctx.globalCompositeOperation = drawState.isEraser ? 'destination-out' : 'source-over';
   ctx.strokeStyle = drawState.isEraser ? 'rgba(0,0,0,1)' : drawState.color;
-  ctx.lineWidth = drawState.size;
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.lineWidth = drawState.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
   ctx.globalCompositeOperation = 'source-over';
 }
@@ -1036,8 +836,7 @@ function drawRemote(data) {
   var ctx = canvas.getContext('2d');
   ctx.globalCompositeOperation = data.eraser ? 'destination-out' : 'source-over';
   ctx.strokeStyle = data.eraser ? 'rgba(0,0,0,1)' : data.color;
-  ctx.lineWidth = data.size;
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.lineWidth = data.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.beginPath(); ctx.moveTo(data.x1, data.y1); ctx.lineTo(data.x2, data.y2); ctx.stroke();
   ctx.globalCompositeOperation = 'source-over';
 }
@@ -1045,8 +844,7 @@ function resetCanvas() {
   var canvas = document.getElementById('game-canvas');
   var ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 function clearCanvas() { resetCanvas(); send({ type: 'clear_canvas' }); }
 function toggleEraser() {
@@ -1054,62 +852,85 @@ function toggleEraser() {
   document.getElementById('eraser-btn').classList.toggle('active', drawState.isEraser);
 }
 
-// === CHAT ===
+// === CHAT + APPROVE SYSTEM ===
 function sendGuess() {
   var input = document.getElementById('chat-input');
   var text = input.value.trim();
-  if (!text) { return; }
+  if (!text) return;
   input.value = '';
-  if (isDrawer) { send({ type: 'chat', text: text }); addChatMsg(text, 'normal', myUsername); }
-  else { send({ type: 'guess', text: text }); addChatMsg(text, 'mine', myUsername); }
+  if (isDrawer) {
+    send({ type: 'chat', text: text });
+    addChatMsg(text, 'normal', myUsername, null);
+  } else {
+    send({ type: 'guess', text: text });
+    addChatMsg(text, 'mine', myUsername, null);
+  }
 }
-function sendGuessMobile() {
-  var input = document.getElementById('chat-input-mobile');
-  var text = input.value.trim();
-  if (!text) { return; }
-  input.value = '';
-  if (isDrawer) { send({ type: 'chat', text: text }); addChatMsg(text, 'normal', myUsername); }
-  else { send({ type: 'guess', text: text }); addChatMsg(text, 'mine', myUsername); }
-}
-document.getElementById('chat-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') { sendGuess(); } });
 
-function addChatMsg(text, type, username) {
+// Drawer approve jawaban pemain
+function approveGuess(clientId) {
+  send({ type: 'approve_guess', clientId: clientId });
+}
+
+function addChatMsg(text, type, username, approveClientId) {
+  var log = document.getElementById('chat-log');
+  if (!log) return;
   var msg = document.createElement('div');
   msg.className = 'chat-msg ' + type;
-  if (type === 'system') { msg.textContent = text; }
-  else { msg.innerHTML = '<span class="who">' + username + ':</span>' + text; }
-  [document.getElementById('chat-log'), document.getElementById('chat-log-mobile')].forEach(function(log) {
-    if (!log) { return; }
-    var clone = msg.cloneNode(true);
-    log.appendChild(clone);
-    log.scrollTop = log.scrollHeight;
-  });
+
+  if (type === 'system') {
+    msg.textContent = text;
+  } else {
+    var whoEl = document.createElement('span');
+    whoEl.className = 'who';
+    whoEl.textContent = username + ':';
+    var textEl = document.createElement('span');
+    textEl.className = 'msg-text';
+    textEl.textContent = text;
+    msg.appendChild(whoEl);
+    msg.appendChild(textEl);
+    // Tombol centang untuk drawer approve jawaban
+    if (approveClientId && isDrawer) {
+      var btn = document.createElement('button');
+      btn.className = 'approve-btn show';
+      btn.textContent = '✓';
+      btn.title = 'Jawaban benar!';
+      btn.onclick = function() {
+        approveGuess(approveClientId);
+        btn.style.display = 'none';
+      };
+      msg.appendChild(btn);
+    }
+  }
+
+  log.appendChild(msg);
+  log.scrollTop = log.scrollHeight;
 }
+
 function clearChatLog() {
   document.getElementById('chat-log').innerHTML = '';
-  document.getElementById('chat-log-mobile').innerHTML = '';
 }
 
 // === SCORES ===
-function renderScoreSidebar() {
+function renderScoreStrip() {
   var sorted = players.slice().sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
   var html = sorted.map(function(p, i) {
     var guessed = correctGuessers.has(p.clientId);
     var avatar = AVATARS[players.indexOf(p) % AVATARS.length];
-    return '<div class="player-score-item ' + (guessed ? 'guessed' : '') + '">' +
-      '<div class="ava" style="background:' + PLAYER_COLORS[i % PLAYER_COLORS.length] + '20">' + avatar + '</div>' +
-      '<div class="pname">' + p.username + '</div>' +
-      '<div class="pscore">' + (p.score || 0) + '</div></div>';
+    return '<div class="score-chip ' + (guessed ? 'guessed' : '') + '">' +
+      '<span class="chip-ava">' + avatar + '</span>' +
+      '<span class="chip-name">' + p.username + '</span>' +
+      '<span class="chip-score">' + (p.score || 0) + '</span></div>';
   }).join('');
-  document.getElementById('score-list-sidebar').innerHTML = html;
-  document.getElementById('score-list-mobile').innerHTML = '<strong style="font-size:0.75rem;color:var(--text-muted)">SKOR</strong>' + html;
+  document.getElementById('score-strip').innerHTML = html;
 }
+
 function updateScores(scores) {
   players = players.map(function(p) {
     var s = scores.find(function(sc) { return sc.clientId === p.clientId; });
     return s ? Object.assign({}, p, { score: s.score }) : p;
   });
-  renderScoreSidebar();
+  renderScoreStrip();
 }
 
 // === ROUND/GAME END ===
@@ -1140,6 +961,7 @@ function showRoundEnd(msg) {
     if (cnt <= 0) { clearInterval(oreTimer); hideOverlay('overlay-round-end'); }
   }, 1000);
 }
+
 var ogeTimer = null;
 function showGameEnd(msg) {
   hideOverlay('overlay-round-end');
@@ -1162,120 +984,9 @@ function showGameEnd(msg) {
   }, 1000);
 }
 
-// === MOBILE CHAT ===
-var mobileChatOpen = false;
-function toggleMobileChat() {
-  mobileChatOpen = !mobileChatOpen;
-  document.getElementById('mobile-sidebar').classList.toggle('open', mobileChatOpen);
-}
-
 // === INIT ===
 document.getElementById('join-code-input').addEventListener('input', function() {
   this.value = this.value.toUpperCase();
-});
-
-// === MOBILE ORIENTATION & FULLSCREEN ===
-var isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
-var hasEnteredLandscape = false;
-
-function isMobile() {
-  return isMobileDevice || (navigator.maxTouchPoints > 1 && Math.min(window.screen.width, window.screen.height) < 768);
-}
-
-function isLandscape() {
-  if (screen.orientation && screen.orientation.type) {
-    return screen.orientation.type.includes('landscape');
-  }
-  return window.innerWidth > window.innerHeight;
-}
-
-function tryFullscreen() {
-  var el = document.documentElement;
-  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-    if (el.requestFullscreen) {
-      el.requestFullscreen({ navigationUI: 'hide' }).catch(function() {});
-    } else if (el.webkitRequestFullscreen) {
-      el.webkitRequestFullscreen();
-    }
-  }
-}
-
-function exitFullscreen() {
-  if (document.fullscreenElement || document.webkitFullscreenElement) {
-    if (document.exitFullscreen) {
-      document.exitFullscreen().catch(function() {});
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    }
-  }
-}
-
-function checkOrientation() {
-  if (!isMobile()) return;
-
-  var overlay = document.getElementById('rotate-overlay');
-
-  if (isLandscape()) {
-    // Sembunyikan overlay, minta fullscreen
-    overlay.classList.remove('show');
-    if (!hasEnteredLandscape) {
-      hasEnteredLandscape = true;
-      // Sedikit delay agar browser siap
-      setTimeout(function() {
-        tryFullscreen();
-        // Re-init canvas setelah fullscreen settle
-        setTimeout(function() {
-          if (typeof initCanvas === 'function' && document.getElementById('screen-game').classList.contains('active')) {
-            canvasInited = false;
-            initCanvas();
-          }
-        }, 400);
-      }, 150);
-    } else {
-      // Sudah pernah landscape, langsung fullscreen lagi kalau perlu
-      tryFullscreen();
-      setTimeout(function() {
-        if (typeof initCanvas === 'function' && document.getElementById('screen-game').classList.contains('active')) {
-          canvasInited = false;
-          initCanvas();
-        }
-      }, 300);
-    }
-  } else {
-    // Portrait: tampilkan overlay
-    overlay.classList.add('show');
-    exitFullscreen();
-  }
-}
-
-// Deteksi awal saat halaman load
-if (isMobile()) {
-  // Kalau sudah landscape dari awal, langsung proceed
-  if (isLandscape()) {
-    hasEnteredLandscape = true;
-    setTimeout(tryFullscreen, 500);
-  } else {
-    // Portrait: tampilkan overlay rotate
-    document.getElementById('rotate-overlay').classList.add('show');
-  }
-}
-
-// Dengarkan perubahan orientasi
-if (screen.orientation && screen.orientation.addEventListener) {
-  screen.orientation.addEventListener('change', function() {
-    setTimeout(checkOrientation, 100);
-  });
-} else {
-  window.addEventListener('orientationchange', function() {
-    setTimeout(checkOrientation, 200);
-  });
-}
-
-// Fallback: resize event untuk browser yang tidak support orientationchange
-window.addEventListener('resize', function() {
-  if (isMobile()) {
-    setTimeout(checkOrientation, 100);
-  }
 });
 </script>
 </body>
