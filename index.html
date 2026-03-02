@@ -15,6 +15,15 @@
 <meta name="twitter:title" content="GambarYuk! 🎨 — Game Tebak Gambar Multiplayer">
 <meta name="twitter:description" content="Main tebak gambar bareng teman! Gambar, tebak, dan menangkan poin. 🎮">
 <meta name="twitter:image" content="https://mainyuk-fronted.pages.dev/preview.png">
+
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GambarYuk!">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="theme-color" content="#1a1a2e">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
@@ -136,7 +145,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 }
 
 /* === GAME SCREEN === */
-#screen-game { flex-direction: column; height: 100dvh; overflow: hidden; }
+#screen-game { flex-direction: column; height: 100dvh; max-height: 100dvh; overflow: hidden; }
 .game-header { background: var(--surface); padding: 6px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; z-index: 100; }
 .timer-display { display: flex; flex-direction: column; align-items: center; }
 .timer-num { font-family: 'Fredoka One', cursive; font-size: 1.8rem; line-height: 1; transition: color 0.5s; }
@@ -176,8 +185,8 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .ping-ms.bad  { color: var(--accent); }
 
 /* game-body: canvas kiri + draw tools + sidebar kanan */
-.game-body { display: flex; flex: 1; overflow: hidden; }
-.canvas-area { flex: 1; display: flex; flex-direction: row; justify-content: center; align-items: center; min-width: 0; background: #2a2a3e; position: relative; overflow: hidden; }
+.game-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.canvas-area { flex: 1; display: flex; flex-direction: row; justify-content: center; align-items: center; min-width: 0; min-height: 0; background: #2a2a3e; position: relative; overflow: hidden; }
 #game-canvas { display: block; background: white; cursor: crosshair; touch-action: none; flex-shrink: 0; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
 .canvas-overlay { position: absolute; background: transparent; z-index: 5; display: none; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 
@@ -1371,23 +1380,34 @@ function resizeCanvas() {
   var canvas = document.getElementById('game-canvas');
   var ctx    = canvas.getContext('2d');
 
-  // Ukur langsung dari .canvas-area (parent element canvas)
-  var canvasArea = canvas.parentElement;
-  var areaRect   = canvasArea ? canvasArea.getBoundingClientRect() : null;
-  var availW = areaRect ? Math.floor(areaRect.width)  : window.innerWidth;
-  var availH = areaRect ? Math.floor(areaRect.height) : window.innerHeight;
-  availW = Math.max(availW, 50);
-  availH = Math.max(availH, 50);
+  // Hitung area yang benar-benar tersedia untuk canvas
+  // dengan mengurangi tinggi elemen lain (header, bottom-panel, draw-tools)
+  var vw = window.innerWidth;
+  var vh = window.innerHeight;
 
-  // Mobile (layar kecil / touch): isi penuh area yang tersedia
-  // Desktop (layar besar): aspect ratio 4:3, maks 860x645
+  var header = document.querySelector('.game-header');
+  var bottomPanel = document.getElementById('bottom-panel');
+  var drawTools = document.getElementById('draw-tools');
+  var chatSidebar = document.querySelector('.chat-sidebar');
+
+  var headerH = header ? header.getBoundingClientRect().height : 0;
+  var bottomH = (bottomPanel && bottomPanel.offsetParent !== null && getComputedStyle(bottomPanel).display !== 'none')
+    ? bottomPanel.getBoundingClientRect().height : 0;
+  var drawToolsW = (drawTools && drawTools.offsetParent !== null && getComputedStyle(drawTools).display !== 'none')
+    ? drawTools.getBoundingClientRect().width : 0;
+  var sidebarW = (chatSidebar && chatSidebar.offsetParent !== null && getComputedStyle(chatSidebar).display !== 'none')
+    ? chatSidebar.getBoundingClientRect().width : 0;
+
+  var availW = Math.max(vw - drawToolsW - sidebarW, 50);
+  var availH = Math.max(vh - headerH - bottomH, 50);
+
   var newW, newH;
-  var isSmallScreen = Math.min(window.screen.width, window.screen.height) < 600
-                   || (navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
-  if (isSmallScreen) {
-    // HP / tablet kecil: penuh area
-    newW = availW;
-    newH = availH;
+  var isMobile = navigator.maxTouchPoints > 1 || Math.min(window.screen.width, window.screen.height) < 768;
+
+  if (isMobile) {
+    // Mobile: isi penuh area tersisa, tanpa aspect ratio — maksimalkan ruang
+    newW = Math.floor(availW);
+    newH = Math.floor(availH);
   } else {
     // Desktop: 4:3 proporsional, tidak melebihi area
     var MAX_W = Math.min(availW, 860);
@@ -1440,7 +1460,8 @@ function initCanvas() {
   var canvas = document.getElementById('game-canvas');
   var ctx = canvas.getContext('2d');
   if (!canvasInited) {
-    window.addEventListener('resize', function() { resizeCanvas(); });
+    window.addEventListener('resize', function() { setTimeout(resizeCanvas, 50); });
+  window.addEventListener('orientationchange', function() { setTimeout(resizeCanvas, 300); });
     var cp = document.getElementById('color-picker');
     cp.innerHTML = '';
     COLORS.forEach(function(c) {
@@ -1912,6 +1933,14 @@ window.addEventListener('resize', function() { if (isMobile()) { setTimeout(chec
     window.startChessBg();
   }
 })();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').catch(function() {});
+  });
+}
 </script>
 </body>
 </html>
