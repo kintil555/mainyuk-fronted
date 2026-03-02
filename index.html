@@ -396,7 +396,7 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 #conn-status.show { display: block; }
 #conn-status.connecting { border: 1px solid var(--accent2); color: var(--accent2); }
 #conn-status.error { border: 1px solid var(--accent); color: var(--accent); }
-.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-60px); background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 20px; font-weight: 700; z-index: 1000; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); white-space: nowrap; }
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-60px); background: var(--card); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 20px; font-weight: 700; z-index: 99999; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); white-space: nowrap; pointer-events: none; }
 .toast.show { transform: translateX(-50%) translateY(0); }
 #queue-overlay { display: none; position: fixed; inset: 0; z-index: 9998; background: rgba(10, 10, 20, 0.96); flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 30px; text-align: center; backdrop-filter: blur(8px); }
 #queue-overlay.show { display: flex; }
@@ -530,7 +530,6 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 <body>
 
 <div id="conn-status"></div>
-<div class="toast" id="toast"></div>
 
 <!-- ── WELCOME / LOGIN SCREEN ── -->
 <div id="screen-welcome" class="screen">
@@ -2019,6 +2018,8 @@ window.addEventListener('resize', function() { if (isMobile()) { setTimeout(chec
 showScreen('screen-auth');
 initAuth();
 </script>
+
+<div class="toast" id="toast"></div>
 
 <script>
 if ('serviceWorker' in navigator) {
