@@ -984,44 +984,37 @@ function updateLobbyTopbar() {
   }
 }
 
-// Handle OAuth callback (when Discord redirects back)
+// Handle OAuth callback
 async function handleOAuthCallback() {
   var urlParams = new URLSearchParams(window.location.search);
-  var code = urlParams.get('code');
-  var state = urlParams.get('state');
+  var dcId = urlParams.get('dc_id');
+  var dcUsername = urlParams.get('dc_username');
+  var dcName = urlParams.get('dc_name');
+  var dcAvatar = urlParams.get('dc_avatar');
+  var dcToken = urlParams.get('dc_token');
   var error = urlParams.get('error');
 
   if (error) {
     showAuthError('Login Discord dibatalkan atau gagal: ' + error);
-    // Clean URL, go to welcome
     setTimeout(function() { cleanUrl(); showScreen('screen-welcome'); }, 3000);
     return;
   }
 
-  if (!code) return; // no callback, normal page load
+  if (!dcId || !dcToken) return; // bukan callback, load biasa
 
-  // Show auth loading
   showScreen('screen-auth');
   document.getElementById('auth-title').textContent = 'Memverifikasi akun Discord...';
-  document.getElementById('auth-sub').textContent = 'Sebentar ya, lagi ambil data profilmu 🎮';
+  document.getElementById('auth-sub').textContent = 'Sebentar ya 🎮';
 
   try {
-    // Exchange code with Worker
-    var res = await fetch(SERVER_URL + '/auth/discord/callback?code=' + encodeURIComponent(code) + '&state=' + encodeURIComponent(state || ''));
-    if (!res.ok) throw new Error('Server error ' + res.status);
-    var data = await res.json();
-
-    if (data.error) throw new Error(data.error);
-
-    // Build user object
     var user = {
-      id: data.id,
-      username: data.username,
-      displayName: data.global_name || data.username,
-      avatar: data.avatar,
-      avatarUrl: buildDiscordAvatarUrl(data.id, data.avatar),
-      sessionToken: data.sessionToken,
-      expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days
+      id: dcId,
+      username: dcUsername,
+      displayName: dcName || dcUsername,
+      avatar: dcAvatar || null,
+      avatarUrl: buildDiscordAvatarUrl(dcId, dcAvatar),
+      sessionToken: dcToken,
+      expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000),
     };
 
     cleanUrl();
@@ -1032,8 +1025,7 @@ async function handleOAuthCallback() {
     if (window.startChessBg) setTimeout(window.startChessBg, 50);
 
   } catch(e) {
-    console.error('OAuth callback error:', e);
-    showAuthError('Gagal login Discord: ' + e.message + '. Coba lagi ya!');
+    showAuthError('Gagal login Discord: ' + e.message);
     cleanUrl();
     setTimeout(function() { showScreen('screen-welcome'); }, 4000);
   }
@@ -1054,10 +1046,9 @@ function cleanUrl() {
 // On page load: check OAuth callback, then check saved session
 async function initAuth() {
   var urlParams = new URLSearchParams(window.location.search);
-  var hasCode = urlParams.has('code');
-  var hasError = urlParams.has('error');
+  var hasCallback = urlParams.has('dc_id') || urlParams.has('error');
 
-  if (hasCode || hasError) {
+  if (hasCallback) {
     await handleOAuthCallback();
     return;
   }
