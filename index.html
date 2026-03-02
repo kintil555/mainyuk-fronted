@@ -1399,84 +1399,78 @@ function updateTimer(t) {
 // === CANVAS ===
 var canvasInited = false;
 
-// Simpan snapshot gambar sebelum resize, kemudian restore
+// ============================================================
+// FIXED LOGICAL CANVAS: 800x600 TIDAK PERNAH BERUBAH
+// Coordinate Normalization: semua posisi disimpan sbg rasio 0..1
+// Hanya CSS display size yang berubah — gambar tidak gepeng
+// ============================================================
+var LOGICAL_W = 800;
+var LOGICAL_H = 600;
+
 function resizeCanvas() {
   var canvas = document.getElementById('game-canvas');
-  var ctx    = canvas.getContext('2d');
 
-  // Hitung area yang benar-benar tersedia untuk canvas
-  // dengan mengurangi tinggi elemen lain (header, bottom-panel, draw-tools)
-  var vw = window.innerWidth;
-  var vh = window.innerHeight;
-
-  var header = document.querySelector('.game-header');
+  var header      = document.querySelector('.game-header');
   var bottomPanel = document.getElementById('bottom-panel');
-  var drawTools = document.getElementById('draw-tools');
+  var drawTools   = document.getElementById('draw-tools');
   var chatSidebar = document.querySelector('.chat-sidebar');
 
-  var headerH = header ? header.getBoundingClientRect().height : 0;
-  var bottomH = (bottomPanel && bottomPanel.offsetParent !== null && getComputedStyle(bottomPanel).display !== 'none')
-    ? bottomPanel.getBoundingClientRect().height : 0;
-  var drawToolsW = (drawTools && drawTools.offsetParent !== null && getComputedStyle(drawTools).display !== 'none')
-    ? drawTools.getBoundingClientRect().width : 0;
-  var sidebarW = (chatSidebar && chatSidebar.offsetParent !== null && getComputedStyle(chatSidebar).display !== 'none')
-    ? chatSidebar.getBoundingClientRect().width : 0;
+  var vw = window.innerWidth;
+  var vh = window.innerHeight;
+  var headerH    = header      ? header.getBoundingClientRect().height : 0;
+  var bottomH    = (bottomPanel && getComputedStyle(bottomPanel).display !== 'none')
+                   ? bottomPanel.getBoundingClientRect().height : 0;
+  var drawToolsW = (drawTools  && getComputedStyle(drawTools).display !== 'none')
+                   ? drawTools.getBoundingClientRect().width : 0;
+  var sidebarW   = (chatSidebar && getComputedStyle(chatSidebar).display !== 'none')
+                   ? chatSidebar.getBoundingClientRect().width : 0;
 
-  var availW = Math.max(vw - drawToolsW - sidebarW, 50);
-  var availH = Math.max(vh - headerH - bottomH, 50);
+  var availW = Math.max(vw - drawToolsW - sidebarW, 100);
+  var availH = Math.max(vh - headerH - bottomH, 100);
 
-  var newW, newH;
-  var isMobile = navigator.maxTouchPoints > 1 || Math.min(window.screen.width, window.screen.height) < 768;
-
-  if (isMobile) {
-    // Mobile: isi penuh area tersisa, tanpa aspect ratio — maksimalkan ruang
-    newW = Math.floor(availW);
-    newH = Math.floor(availH);
+  // Hitung display size proporsional (4:3 = 800/600)
+  var logRatio = LOGICAL_W / LOGICAL_H;
+  var dispW, dispH;
+  if (availW / logRatio <= availH) {
+    dispW = Math.floor(availW);
+    dispH = Math.floor(availW / logRatio);
   } else {
-    // Desktop: 4:3 proporsional, tidak melebihi area
-    var MAX_W = Math.min(availW, 860);
-    var MAX_H = Math.min(availH, 645);
-    var ratio  = 4 / 3;
-    if (MAX_W / ratio <= MAX_H) {
-      newW = MAX_W; newH = Math.floor(MAX_W / ratio);
-    } else {
-      newH = MAX_H; newW = Math.floor(MAX_H * ratio);
-    }
+    dispH = Math.floor(availH);
+    dispW = Math.floor(availH * logRatio);
   }
 
-  // Tidak ada perubahan ukuran? Skip agar gambar tidak hilang
-  if (canvas.width === newW && canvas.height === newH) return;
+  // CSS display size berubah, logical canvas TIDAK berubah
+  canvas.style.width  = dispW + 'px';
+  canvas.style.height = dispH + 'px';
 
-  // Simpan gambar lama sebelum ubah dimensi
-  var snapshot = null;
-  if (canvas.width > 0 && canvas.height > 0) {
-    try { snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height); } catch(e) {}
+  // Set logical size hanya sekali (atau jika reset)
+  if (canvas.width !== LOGICAL_W || canvas.height !== LOGICAL_H) {
+    canvas.width  = LOGICAL_W;
+    canvas.height = LOGICAL_H;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
   }
 
-  canvas.width  = newW;
-  canvas.height = newH;
-
-  // Latar putih dulu
-  ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, newW, newH);
-
-  // Restore gambar lama (scale proporsional ke ukuran baru)
-  if (snapshot && snapshot.width > 0 && snapshot.height > 0) {
-    var tmp = document.createElement('canvas');
-    tmp.width = snapshot.width; tmp.height = snapshot.height;
-    tmp.getContext('2d').putImageData(snapshot, 0, 0);
-    ctx.drawImage(tmp, 0, 0, snapshot.width, snapshot.height, 0, 0, newW, newH);
-  }
-
-  // Overlay (untuk guesser) ikuti ukuran canvas, di-center
+  // Overlay guesser ikuti display size
   var overlay = document.getElementById('canvas-overlay');
   if (overlay) {
-    overlay.style.width     = newW + 'px';
-    overlay.style.height    = newH + 'px';
+    overlay.style.width     = dispW + 'px';
+    overlay.style.height    = dispH + 'px';
     overlay.style.position  = 'absolute';
     overlay.style.left      = '50%';
     overlay.style.top       = '50%';
     overlay.style.transform = 'translate(-50%, -50%)';
+  }
+
+  // Shape preview overlay juga ikuti display size
+  if (typeof _shapePreviewEl !== 'undefined' && _shapePreviewEl) {
+    _shapePreviewEl.style.width  = dispW + 'px';
+    _shapePreviewEl.style.height = dispH + 'px';
+    var rect = canvas.getBoundingClientRect();
+    var parentRect = canvas.parentElement.getBoundingClientRect();
+    _shapePreviewEl.style.left = (rect.left - parentRect.left) + 'px';
+    _shapePreviewEl.style.top  = (rect.top  - parentRect.top)  + 'px';
   }
 }
 
@@ -1526,7 +1520,11 @@ function initCanvas() {
       var pos = getPos(e, canvas);
       if (drawState.shapeTool === 'pen' || drawState.isEraser) {
         drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y);
-        send({ type: 'draw', data: { tool: 'pen', x1: drawState.lastX, y1: drawState.lastY, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, eraser: drawState.isEraser } });
+        // Kirim sebagai rasio (normalized) bukan pixel
+        send({ type: 'draw', data: { tool: 'pen',
+          rx1: drawState.lastX/LOGICAL_W, ry1: drawState.lastY/LOGICAL_H,
+          rx2: pos.x/LOGICAL_W, ry2: pos.y/LOGICAL_H,
+          color: drawState.color, size: drawState.size, eraser: drawState.isEraser } });
         drawState.lastX = pos.x; drawState.lastY = pos.y;
       }
       // shape preview via CSS overlay — dibuat di drawShapePreview
@@ -1541,8 +1539,11 @@ function initCanvas() {
       clearShapePreview();
       if (drawState.shapeTool !== 'pen' && !drawState.isEraser) {
         var sx = drawState.shapeStartX, sy = drawState.shapeStartY;
-        var shapeData = { tool: drawState.shapeTool, x1: sx, y1: sy, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, fill: drawState.isFill };
-        drawShape(ctx, shapeData);
+        var shapeData = { tool: drawState.shapeTool,
+          rx1: sx/LOGICAL_W, ry1: sy/LOGICAL_H,
+          rx2: pos.x/LOGICAL_W, ry2: pos.y/LOGICAL_H,
+          color: drawState.color, size: drawState.size, fill: drawState.isFill };
+        drawShape(ctx, toLogicalCoords(shapeData));
         send({ type: 'draw', data: shapeData });
       }
     });
@@ -1565,7 +1566,10 @@ function initCanvas() {
       var pos = getPos(e.touches[0], canvas);
       if (drawState.shapeTool === 'pen' || drawState.isEraser) {
         drawLine(ctx, drawState.lastX, drawState.lastY, pos.x, pos.y);
-        send({ type: 'draw', data: { tool: 'pen', x1: drawState.lastX, y1: drawState.lastY, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, eraser: drawState.isEraser } });
+        send({ type: 'draw', data: { tool: 'pen',
+          rx1: drawState.lastX/LOGICAL_W, ry1: drawState.lastY/LOGICAL_H,
+          rx2: pos.x/LOGICAL_W, ry2: pos.y/LOGICAL_H,
+          color: drawState.color, size: drawState.size, eraser: drawState.isEraser } });
         drawState.lastX = pos.x; drawState.lastY = pos.y;
       }
     }, { passive: false });
@@ -1577,8 +1581,11 @@ function initCanvas() {
       clearShapePreview();
       if (drawState.shapeTool !== 'pen' && !drawState.isEraser) {
         var sx = drawState.shapeStartX, sy = drawState.shapeStartY;
-        var shapeData = { tool: drawState.shapeTool, x1: sx, y1: sy, x2: pos.x, y2: pos.y, color: drawState.color, size: drawState.size, fill: drawState.isFill };
-        drawShape(ctx, shapeData);
+        var shapeData = { tool: drawState.shapeTool,
+          rx1: sx/LOGICAL_W, ry1: sy/LOGICAL_H,
+          rx2: pos.x/LOGICAL_W, ry2: pos.y/LOGICAL_H,
+          color: drawState.color, size: drawState.size, fill: drawState.isFill };
+        drawShape(ctx, toLogicalCoords(shapeData));
         send({ type: 'draw', data: shapeData });
       }
     });
@@ -1588,7 +1595,26 @@ function initCanvas() {
   }
   resizeCanvas();
 }
-function getPos(e, canvas) { var rect = canvas.getBoundingClientRect(); return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) }; }
+// Coordinate Normalization: screen pos -> logical canvas pos (via ratio)
+function getPos(e, canvas) {
+  var rect = canvas.getBoundingClientRect();
+  // Hitung rasio posisi di display (0..1)
+  var rx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  var ry = Math.max(0, Math.min(1, (e.clientY - rect.top)  / rect.height));
+  // Konversi ke logical pixel (selalu 800x600)
+  return { x: rx * LOGICAL_W, y: ry * LOGICAL_H };
+}
+// Konversi data rasio -> koordinat logical pixel (untuk render)
+function toLogicalCoords(d) {
+  var out = Object.assign({}, d);
+  // Support both normalized (rx1) and legacy (x1) format
+  if (d.rx1 !== undefined) {
+    out.x1 = d.rx1 * LOGICAL_W; out.y1 = d.ry1 * LOGICAL_H;
+    out.x2 = d.rx2 * LOGICAL_W; out.y2 = d.ry2 * LOGICAL_H;
+  }
+  return out;
+}
+
 function drawLine(ctx, x1, y1, x2, y2) {
   ctx.globalCompositeOperation = drawState.isEraser ? 'destination-out' : 'source-over';
   ctx.strokeStyle = drawState.isEraser ? 'rgba(0,0,0,1)' : drawState.color;
@@ -1651,25 +1677,27 @@ function drawShape(ctx, d) {
 }
 
 function drawShapePreview(canvas, sx, sy, ex, ey) {
-  // Buat overlay canvas sementara untuk preview
+  // Preview overlay — logical size sama dengan logical canvas (800x600)
   if (!_shapePreviewEl) {
     _shapePreviewEl = document.createElement('canvas');
     _shapePreviewEl.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none;z-index:10;opacity:0.7;';
     canvas.parentElement.appendChild(_shapePreviewEl);
   }
-  _shapePreviewEl.width = canvas.width; _shapePreviewEl.height = canvas.height;
-  _shapePreviewEl.style.width = canvas.style.width || canvas.width + 'px';
-  _shapePreviewEl.style.height = canvas.style.height || canvas.height + 'px';
-  // Posisikan overlay di atas canvas
+  // Logical size selalu 800x600
+  _shapePreviewEl.width  = LOGICAL_W;
+  _shapePreviewEl.height = LOGICAL_H;
+  // Display size ikuti canvas CSS display size
+  _shapePreviewEl.style.width  = canvas.style.width  || canvas.getBoundingClientRect().width  + 'px';
+  _shapePreviewEl.style.height = canvas.style.height || canvas.getBoundingClientRect().height + 'px';
   var rect = canvas.getBoundingClientRect();
   var parentRect = canvas.parentElement.getBoundingClientRect();
   _shapePreviewEl.style.left = (rect.left - parentRect.left) + 'px';
   _shapePreviewEl.style.top  = (rect.top  - parentRect.top)  + 'px';
 
   var pctx = _shapePreviewEl.getContext('2d');
-  pctx.clearRect(0, 0, _shapePreviewEl.width, _shapePreviewEl.height);
-  // Gambar preview dengan setLineDash agar terlihat sebagai preview
+  pctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
   pctx.setLineDash([6, 4]);
+  // sx,sy,ex,ey sudah dalam logical coords
   drawShape(pctx, { tool: drawState.shapeTool, x1: sx, y1: sy, x2: ex, y2: ey, color: drawState.color, size: Math.max(1, drawState.size), fill: drawState.isFill });
   pctx.setLineDash([]);
 }
@@ -1683,25 +1711,25 @@ function clearShapePreview() {
 function drawRemote(data) {
   var canvas = document.getElementById('game-canvas');
   var ctx = canvas.getContext('2d');
-  // data.tool bisa 'pen' (garis bebas), 'line', 'rect', 'square', 'ellipse', 'circle'
-  // atau tidak ada tool (backward compat = pen)
-  var tool = data.tool || 'pen';
-  if (tool === 'pen' || data.eraser) {
-    ctx.globalCompositeOperation = data.eraser ? 'destination-out' : 'source-over';
-    ctx.strokeStyle = data.eraser ? 'rgba(0,0,0,1)' : data.color;
-    ctx.lineWidth = data.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.beginPath(); ctx.moveTo(data.x1, data.y1); ctx.lineTo(data.x2, data.y2); ctx.stroke();
+  // Konversi normalized coords -> logical pixel
+  var d = toLogicalCoords(data);
+  var tool = d.tool || 'pen';
+  if (tool === 'pen' || d.eraser) {
+    ctx.globalCompositeOperation = d.eraser ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = d.eraser ? 'rgba(0,0,0,1)' : d.color;
+    ctx.lineWidth = d.size; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(d.x1, d.y1); ctx.lineTo(d.x2, d.y2); ctx.stroke();
     ctx.globalCompositeOperation = 'source-over';
   } else {
-    drawShape(ctx, data);
+    drawShape(ctx, d);
   }
 }
 function resetCanvas() {
   var canvas = document.getElementById('game-canvas');
   var ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
   ctx.fillStyle = 'white';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
 }
 function clearCanvas() { resetCanvas(); send({ type: 'clear_canvas' }); }
 function toggleEraser() {
