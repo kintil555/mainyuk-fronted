@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=0.85, maximum-scale=3.0, user-scalable=yes">
 <title>GambarYuk! 🎨</title>
 
 <!-- Open Graph / Discord Preview -->
@@ -482,6 +482,30 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 .toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: white; top: 3px; left: 3px; transition: transform 0.2s; }
 .toggle-switch input:checked + .toggle-slider { background: var(--accent3); }
 .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+/* === MOBILE GLOBAL SCALE DOWN === */
+@media (max-width: 480px) {
+  html { font-size: 14px; }
+  h1.logo { font-size: 1.6rem !important; }
+  .lobby-card { padding: 14px 12px !important; border-radius: 12px !important; }
+  .lobby-card h2 { font-size: 1rem !important; margin-bottom: 8px !important; }
+  input[type="text"] { padding: 8px 10px !important; font-size: 0.85rem !important; border-radius: 8px !important; }
+  .btn { padding: 9px 12px !important; font-size: 0.85rem !important; border-radius: 10px !important; }
+  .input-group { gap: 6px !important; margin-bottom: 8px !important; }
+  .captcha-section { margin: 6px 0 !important; }
+  .divider { margin: 6px 0 !important; font-size: 0.75rem !important; }
+  .password-row { margin-bottom: 6px !important; font-size: 0.8rem !important; }
+  #screen-lobby { padding: 8px 10px !important; gap: 6px !important; }
+  .lobby-footer { font-size: 0.68rem !important; }
+  .captcha-wrapper { transform: scale(0.88); transform-origin: left top; }
+
+  /* Waiting room */
+  .waiting-card { padding: 14px 12px !important; }
+  .player-slot { padding: 8px 10px !important; }
+  .avatar { width: 32px !important; height: 32px !important; font-size: 1rem !important; }
+  .config-row label { font-size: 0.75rem !important; }
+  .config-row input[type=range] { width: 90px !important; }
+}
 </style>
 </head>
 <body>
@@ -1827,11 +1851,7 @@ var hasEnteredLandscape = false;
 function isMobile() { return isMobileDevice || (navigator.maxTouchPoints > 1 && Math.min(window.screen.width, window.screen.height) < 768); }
 function isLandscape() { if (screen.orientation && screen.orientation.type) { return screen.orientation.type.includes('landscape'); } return window.innerWidth > window.innerHeight; }
 function tryFullscreen() {
-  var el = document.documentElement;
-  if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-    if (el.requestFullscreen) { el.requestFullscreen({ navigationUI: 'hide' }).catch(function() {}); }
-    else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
-  }
+  // Auto fullscreen dimatikan
 }
 function exitFullscreen() {
   if (document.fullscreenElement || document.webkitFullscreenElement) {
@@ -1840,28 +1860,11 @@ function exitFullscreen() {
   }
 }
 function checkOrientation() {
-  if (!isMobile()) return;
-  var overlay = document.getElementById('rotate-overlay');
-  if (isLandscape()) {
-    overlay.classList.remove('show');
-    if (!hasEnteredLandscape) {
-      hasEnteredLandscape = true;
-      setTimeout(function() {
-        tryFullscreen();
-        setTimeout(function() { if (document.getElementById('screen-game').classList.contains('active')) { resizeCanvas(); } }, 400);
-      }, 150);
-    } else {
-      tryFullscreen();
-      setTimeout(function() { if (document.getElementById('screen-game').classList.contains('active')) { resizeCanvas(); } }, 300);
-    }
-  } else {
-    overlay.classList.add('show'); exitFullscreen();
-  }
+  // Resize canvas saat orientasi berubah
+  setTimeout(function() { if (document.getElementById('screen-game').classList.contains('active')) { resizeCanvas(); } }, 300);
 }
-if (isMobile()) {
-  if (isLandscape()) { hasEnteredLandscape = true; setTimeout(tryFullscreen, 500); }
-  else { document.getElementById('rotate-overlay').classList.add('show'); }
-}
+// Auto rotate overlay dimatikan — mobile bisa main portrait/landscape bebas
+
 if (screen.orientation && screen.orientation.addEventListener) {
   screen.orientation.addEventListener('change', function() { setTimeout(checkOrientation, 100); });
 } else {
