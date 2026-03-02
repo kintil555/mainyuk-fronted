@@ -633,35 +633,35 @@ input[type="text"]::placeholder { color: var(--text-muted); }
 
 <script>
 // === HARDCODED CONFIG ===
-const SERVER_URL = 'https://mainyuk.secret5.workers.dev';
+var SERVER_URL = 'https://mainyuk.secret5.workers.dev';
 
 // === STATE ===
-let ws = null;
-let myClientId = null;
-let myUsername = '';
-let currentRoomId = '';
-let isDrawer = false;
-let isReady = false;
-let gamePhase = 'lobby';
-let players = [];
-let correctGuessers = new Set();
-let turnstileToken = null;
-let turnstileVerified = false;
-let hostId = null;
-let gameConfig = { drawTime: 80, maxRounds: 3, maxPlayers: 5 };
+var ws = null;
+var myClientId = null;
+var myUsername = '';
+var currentRoomId = '';
+var isDrawer = false;
+var isReady = false;
+var gamePhase = 'lobby';
+var players = [];
+var correctGuessers = new Set();
+var turnstileToken = null;
+var turnstileVerified = false;
+var hostId = null;
+var gameConfig = { drawTime: 80, maxRounds: 3, maxPlayers: 5 };
 
-const CONFIG_LIMITS = {
+var CONFIG_LIMITS = {
   drawTime:   { min: 30, max: 180, step: 10 },
   maxRounds:  { min: 1,  max: 10,  step: 1  },
   maxPlayers: { min: 3,  max: 8,   step: 1  },
 };
 
-const COLORS = ['#000000','#ffffff','#ff4444','#ff8c00','#ffd700','#7ed321','#00b894','#00ccc0','#4a90d9','#9b59b6','#e91e63','#795548','#607d8b'];
-const SIZES = [3, 7, 14, 24];
-const AVATARS = ['🐱','🐶','🦊','🐼','🐨','🐸','🦁','🐯','🐺','🦄','🐙','🦋'];
-const PLAYER_COLORS = ['#e94560','#f5a623','#00d2d3','#00b894','#a29bfe','#fd79a8'];
+var COLORS = ['#000000','#ffffff','#ff4444','#ff8c00','#ffd700','#7ed321','#00b894','#00ccc0','#4a90d9','#9b59b6','#e91e63','#795548','#607d8b'];
+var SIZES = [3, 7, 14, 24];
+var AVATARS = ['🐱','🐶','🦊','🐼','🐨','🐸','🦁','🐯','🐺','🦄','🐙','🦋'];
+var PLAYER_COLORS = ['#e94560','#f5a623','#00d2d3','#00b894','#a29bfe','#fd79a8'];
 
-let drawState = { isDrawing: false, color: '#000000', size: 7, isEraser: false, lastX: 0, lastY: 0, shapeTool: 'pen', isFill: false, shapeStartX: 0, shapeStartY: 0 };
+var drawState = { isDrawing: false, color: '#000000', size: 7, isEraser: false, lastX: 0, lastY: 0, shapeTool: 'pen', isFill: false, shapeStartX: 0, shapeStartY: 0 };
 
 // =============================================
 // PING SYSTEM
